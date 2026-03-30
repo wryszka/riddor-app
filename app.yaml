@@ -1,0 +1,16 @@
+command:
+  - streamlit
+  - run
+  - app.py
+  - --server.port
+  - "8000"
+  - --server.address
+  - 0.0.0.0
+  - --server.headless
+  - "true"
+
+env:
+  - name: DATABRICKS_CATALOG
+    valueFrom: riddor-app-dev-laurence_ryszka.DATABRICKS_CATALOG
+  - name: DATABRICKS_SCHEMA
+    valueFrom: riddor-app-dev-laurence_ryszka.DATABRICKS_SCHEMA

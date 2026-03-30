@@ -1,0 +1,54 @@
+bundle:
+  name: riddor-app
+
+workspace:
+  host: https://fevm-lr-serverless-aws-us.cloud.databricks.com
+
+targets:
+  dev:
+    mode: development
+    default: true
+    resources:
+      apps:
+        riddor-app:
+          name: riddor-app-dev-${workspace.current_user.short_name}
+          description: "RIDDOR Decision Support Application"
+          source_code_path: .
+          config:
+            - name: DATABRICKS_CATALOG
+              value: lr_serverless_aws_us_catalog
+            - name: DATABRICKS_SCHEMA
+              value: riddor
+          resources:
+            - name: riddor-serving-endpoint
+              description: "Foundation Model endpoint for AI classification and chat"
+              serving_endpoint: databricks-meta-llama-3-3-70b-instruct
+            - name: riddor-sql-warehouse
+              description: "SQL warehouse for Unity Catalog queries"
+              sql_warehouse: starter
+          permissions:
+            - user_name: ${workspace.current_user.userName}
+              level: CAN_MANAGE
+
+  prod:
+    resources:
+      apps:
+        riddor-app:
+          name: riddor-app
+          description: "RIDDOR Decision Support Application"
+          source_code_path: .
+          config:
+            - name: DATABRICKS_CATALOG
+              value: lr_serverless_aws_us_catalog
+            - name: DATABRICKS_SCHEMA
+              value: riddor
+          resources:
+            - name: riddor-serving-endpoint
+              description: "Foundation Model endpoint for AI classification and chat"
+              serving_endpoint: databricks-meta-llama-3-3-70b-instruct
+            - name: riddor-sql-warehouse
+              description: "SQL warehouse for Unity Catalog queries"
+              sql_warehouse: starter
+          permissions:
+            - user_name: ${workspace.current_user.userName}
+              level: CAN_MANAGE
