@@ -1,16 +1,13 @@
 command:
-  - streamlit
-  - run
-  - app.py
-  - --server.port
+  - "streamlit"
+  - "run"
+  - "app.py"
+  - "--server.port"
   - "8000"
-  - --server.address
-  - 0.0.0.0
-  - --server.headless
-  - "true"
-
+  - "--server.address"
+  - "0.0.0.0"
 env:
   - name: DATABRICKS_CATALOG
-    valueFrom: riddor-app-dev-laurence_ryszka.DATABRICKS_CATALOG
+    value: "lr_serverless_aws_us_catalog"
   - name: DATABRICKS_SCHEMA
-    valueFrom: riddor-app-dev-laurence_ryszka.DATABRICKS_SCHEMA
+    value: "riddor"
