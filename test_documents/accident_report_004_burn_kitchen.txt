@@ -1,0 +1,51 @@
+ACCIDENT REPORT FORM
+====================
+Employer: Prestwick Hotels Group
+Location: The Grand Hotel, Edinburgh
+Reference: ACC/2026/0189
+
+INJURED PERSON
+Name: Sophie Chen
+Staff ID: GH-2298
+Role: Commis Chef
+Department: Kitchen
+Employment Start Date: September 2024
+
+ACCIDENT DETAILS
+Date: 26 March 2026
+Time: 12:30 (during lunch service)
+Location: Main kitchen, hot section
+Witnesses: Head Chef Marco Rossi, Sous Chef Emma Watson
+
+DESCRIPTION
+During the busy lunch service, Sophie was draining a large stockpot
+(approximately 40 litres) of boiling stock. As she tilted the pot at
+the drain station, the pot slipped from her grip. The boiling liquid
+splashed across both her forearms and the front of her chef whites.
+
+Sophie screamed and immediately moved to the nearest cold water tap.
+Chef Rossi assisted in running cold water over the affected areas for
+20 minutes. The kitchen first aider assessed the burns and called 999.
+
+Sophie was taken by ambulance to Edinburgh Royal Infirmary Burns Unit.
+
+INJURY ASSESSMENT
+Burns to both forearms (anterior surface) and lower abdomen.
+Burns Unit assessment: Mixed depth burns (superficial to deep partial
+thickness). Estimated total body surface area affected: 8-9%.
+Sophie has been admitted for observation and wound management.
+
+EQUIPMENT/SUBSTANCES
+- 40 litre stainless steel stockpot (no handles, rim grip only)
+- Contents: beef stock at approximately 95-100°C
+- Drain station has no tilt mechanism or cradle
+
+CONTRIBUTING FACTORS (PRELIMINARY)
+- No mechanical tilting aid available for large pots
+- Kitchen was extremely busy (covers were 20% above normal)
+- Sophie has not received specific manual handling training for large
+  hot vessel drainage
+- Chef whites provided do not include forearm splash protection
+
+Completed by: Marco Rossi (Head Chef)
+H&S Manager Notified: Claire Dunn (26/03/2026, 13:00)

@@ -1,0 +1,60 @@
+ACCIDENT BOOK ENTRY & EXTENDED REPORT
+=====================================
+Company: Swift Logistics Ltd
+Depot: Birmingham Distribution Centre
+Accident Book Ref: AB-2026-0093
+
+PERSON DETAILS
+Name: Michael O'Brien
+Employee No: SL-6784
+Job Title: Warehouse Operative (Picker/Packer)
+Department: Outbound Dispatch
+Line Manager: Tracy Underwood
+
+ACCIDENT DETAILS
+Date: 19 March 2026
+Time: Approximately 15:45
+Location: Racking Aisle 14, Zone D (Heavy Goods)
+Activity at Time: Manual handling - picking order #ORD-88214
+
+DESCRIPTION OF WHAT HAPPENED
+Michael was picking a customer order which included a case of industrial
+sealant (25kg). The case was stored at floor level on the bottom rack.
+As Michael bent down and lifted the case, he felt a sudden sharp pain
+in his lower back. He dropped the case and was unable to straighten up.
+
+Michael reported the injury to his line manager Tracy Underwood at 15:50.
+He was taken to the first aid room and given ibuprofen. He was advised
+to see his GP. Michael left the depot at 16:15 (driven home by colleague).
+
+SUBSEQUENT INFORMATION
+- 20 March 2026: Michael saw his GP. Diagnosed with acute lumbar strain.
+  Prescribed co-codamol and diazepam. Signed off work for 2 weeks.
+- 25 March 2026: Michael called to say he is still in significant pain.
+  GP has extended his fit note for a further 2 weeks (total 4 weeks).
+- 30 March 2026: Still absent. Total consecutive days absent (not counting
+  day of accident 19 March): 11 days. Michael reports he cannot sit,
+  stand or walk for prolonged periods.
+
+ABSENCE TRACKING
+Day of Accident (19 March): Does NOT count
+Day 1: 20 March (Thursday)
+Day 2: 21 March (Friday)
+Day 3: 22 March (Saturday) *weekend - still counts*
+Day 4: 23 March (Sunday) *weekend - still counts*
+Day 5: 24 March (Monday)
+Day 6: 25 March (Tuesday)
+Day 7: 26 March (Wednesday) ** 7-DAY THRESHOLD REACHED **
+Day 8-11: 27-30 March
+
+STATUS: RIDDOR REPORTABLE - Over 7-day incapacitation threshold exceeded.
+Report due by: 3 April 2026 (15 days from accident date)
+
+MANUAL HANDLING ASSESSMENT
+Last MH risk assessment for this area: November 2025
+Maximum individual lift weight specified: 20kg
+The case of sealant weighed 25kg - ABOVE the assessed limit.
+No mechanical lifting aid was available in Aisle 14.
+
+Completed by: Tracy Underwood (Line Manager)
+H&S Notified: 26 March 2026 (when 7-day threshold reached)

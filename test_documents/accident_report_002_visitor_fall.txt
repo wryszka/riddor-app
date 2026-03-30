@@ -1,0 +1,55 @@
+ACCIDENT/INCIDENT REPORT
+========================
+Organisation: Westbrook Retail Park
+Site: Main Shopping Centre
+Reference: INC-2026-0312
+
+PERSON INVOLVED
+Name: Patricia Thornton
+Status: Member of public (customer)
+Age: 72
+Address: [Redacted for privacy]
+
+INCIDENT INFORMATION
+Date: 27 March 2026
+Time: 14:20
+Location: Main atrium, ground floor near Costa Coffee
+Weather Conditions: N/A (indoor)
+Lighting: Good
+
+WHAT HAPPENED
+Mrs Thornton was walking through the main atrium carrying shopping bags.
+She stepped onto a section of flooring where a tile had become uneven
+(approximately 15mm raised edge). Her foot caught on the raised tile and
+she fell forward heavily, landing on her right side.
+
+Mrs Thornton was unable to get up. She was in significant pain,
+particularly in her right hip area. Centre security attended within
+2 minutes. First aider John Keane assessed the situation and called 999.
+An ambulance arrived at 14:38.
+
+Paramedics assessed Mrs Thornton at the scene and suspected a fractured
+right hip. She was taken directly from the scene to City General Hospital
+by ambulance for X-ray and treatment.
+
+INJURIES
+Suspected fractured right hip (femoral neck fracture)
+Bruising to right arm and shoulder
+Graze to right elbow
+
+FIRST AID GIVEN
+- Kept patient comfortable and warm with blankets
+- Did not attempt to move the patient
+- Monitored consciousness and breathing
+- Ambulance called
+
+SCENE INFORMATION
+The raised tile had been flagged in last month's maintenance walkthrough
+(ref: MW-2026-Feb-17) but repair had not yet been scheduled. No warning
+signs or barriers were in place at the time of the incident.
+
+CCTV footage has been secured (Camera: ATR-07, time: 14:18-14:40)
+
+Reported by: John Keane (Security & First Aid)
+Centre Manager notified: Susan Williams (14:25)
+Date of Report: 27 March 2026

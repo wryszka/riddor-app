@@ -1,0 +1,54 @@
+WORKPLACE ACCIDENT REPORT FORM
+==============================
+Company: Meridian Engineering Ltd
+Report Reference: AR-2026-0047
+
+SECTION 1: DETAILS OF INJURED PERSON
+Name: Daniel Hughes
+Employee Number: EMP-4421
+Job Title: CNC Machine Operator
+Department: Manufacturing
+Date of Birth: 14/08/1985
+Employment Status: Full-time permanent employee
+
+SECTION 2: INCIDENT DETAILS
+Date of Incident: 28 March 2026
+Time of Incident: 10:45
+Location: Workshop Floor, Bay 7, Building A
+Supervisor on Duty: Karen Patel
+
+SECTION 3: DESCRIPTION OF INCIDENT
+Mr Hughes was operating the CNC lathe (Machine ID: CNC-L014) when a metal
+workpiece became loose from the chuck. The workpiece struck Mr Hughes on
+his left forearm with significant force. He was unable to continue working
+and was in considerable pain. First aider Rachel Simmons attended and
+applied a splint and ice pack. An ambulance was called.
+
+SECTION 4: INJURY DETAILS
+Nature of Injury: Suspected fracture to left ulna (forearm)
+Body Part Affected: Left forearm
+Treatment Given On Site: Splint applied, ice pack, pain relief
+Hospital Attendance: Yes - Royal Victoria Hospital A&E
+Hospital Diagnosis: Closed fracture to left ulna, cast applied
+Expected Absence: Minimum 6 weeks
+
+SECTION 5: WITNESSES
+1. Karen Patel (Supervisor) - was 5 metres away at time of incident
+2. Mohammed Iqbal (Machine Operator) - working at adjacent machine
+
+SECTION 6: EQUIPMENT INVOLVED
+Machine: CNC Lathe CNC-L014
+Last Maintenance: 15 March 2026
+Last Inspection: 20 March 2026
+
+SECTION 7: IMMEDIATE ACTIONS TAKEN
+- Machine isolated and tagged out
+- Area cordoned off
+- First aid administered
+- Ambulance called
+- Supervisor notified
+- H&S Manager notified
+
+Reported By: Karen Patel (Shift Supervisor)
+Date Reported: 28 March 2026
+Signature: K. Patel

@@ -1,0 +1,64 @@
+DANGEROUS OCCURRENCE / NEAR MISS REPORT
+========================================
+Company: Northern Chemicals Processing Ltd
+Site: Middlesbrough Plant
+Report No: DO-2026-008
+
+CLASSIFICATION: DANGEROUS OCCURRENCE
+
+DATE AND TIME
+Date: 25 March 2026
+Time: 06:15 (during night shift)
+Shift: Night shift (22:00 - 06:00)
+
+LOCATION
+Building: Tank Farm Area, Sector C
+Specific Location: Storage Tank T-17 (Hydrochloric Acid 33%)
+
+DESCRIPTION OF OCCURRENCE
+During routine transfer of hydrochloric acid (33% concentration) from
+delivery tanker to storage tank T-17, a flexible hose coupling failed
+at the connection point to the fixed pipework. This resulted in an
+uncontrolled release of approximately 200 litres of hydrochloric acid
+onto the bunded area surrounding the tank.
+
+The acid release created a significant vapour cloud in the immediate
+area. The emergency alarm was sounded at 06:17 and the area was
+evacuated. The on-site emergency response team deployed in full chemical
+PPE and isolated the supply at 06:24. The spill was contained within
+the bund.
+
+PERSONS IN AREA AT TIME
+- Tanker Driver: Steve Bowman (was in cab, not exposed)
+- Process Operator: Lee Harrison (was at connection point, retreated immediately)
+- Process Operator: Craig Foster (monitoring from control room)
+
+INJURIES
+No injuries sustained. Lee Harrison was assessed by occupational health
+as a precaution - no exposure symptoms detected.
+
+ENVIRONMENTAL IMPACT
+Spill fully contained within the bund. No release to drains, watercourses
+or atmosphere beyond the immediate area. Environmental officer notified.
+
+EQUIPMENT DETAILS
+Failed Component: Flexible transfer hose coupling (3" Camlock Type C)
+Age of Component: 18 months (replacement schedule is 24 months)
+Last Inspection: 10 January 2026 - passed visual inspection
+Manufacturer: FlexiFlow Industrial Hoses
+
+ROOT CAUSE (PRELIMINARY)
+Coupling showed signs of chemical degradation to the seal. Possible
+that the 24-month replacement schedule is insufficient for HCl service.
+
+IMMEDIATE ACTIONS
+1. Area evacuated and emergency response deployed
+2. Supply isolated at tanker and at tank inlet valve
+3. Spill contained within bund - neutralised with soda ash
+4. All similar couplings on HCl lines taken out of service for inspection
+5. Transfer operations suspended pending investigation
+6. Environmental agency notified as precaution
+
+Reported By: Alan Bridges (Night Shift Manager)
+Countersigned: Dr. Fiona Stewart (H&S Director)
+Date: 25 March 2026

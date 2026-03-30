@@ -1,0 +1,62 @@
+OCCUPATIONAL HEALTH REFERRAL OUTCOME
+=====================================
+Confidential
+Company: Apex Automotive Refinishing
+Reference: OH/2026/0034
+
+EMPLOYEE DETAILS
+Name: Ryan Gallagher
+Employee No: AAR-0156
+Department: Paint Booth Operations
+Job Title: Vehicle Paint Sprayer
+Length of Service: 11 years
+Date of Birth: 03/05/1982
+
+REFERRAL REASON
+Ryan was referred to Occupational Health following repeated episodes of
+breathing difficulty, wheezing, and chest tightness. Symptoms have been
+worsening over the past 6 months. Ryan reports symptoms are worst during
+and immediately after spray sessions, and improve on days off and during
+annual leave.
+
+OCCUPATIONAL HEALTH ASSESSMENT
+Date of Assessment: 24 March 2026
+Assessing Physician: Dr. Helen Crawford (Consultant in Occupational Medicine)
+
+FINDINGS
+Peak flow diary (kept over 4 weeks) shows a clear work-related pattern
+with reductions during working days and recovery on rest days. Spirometry
+shows mild obstructive pattern (FEV1 78% predicted).
+
+Serial peak flow analysis confirms a work-related pattern consistent
+with occupational asthma.
+
+DIAGNOSIS
+Occupational Asthma - caused by exposure to isocyanate-containing
+two-pack paints (HDI and MDI based hardeners) used in vehicle refinishing.
+
+This is a PRESCRIBED DISEASE under RIDDOR 2013 (Schedule 1, Table 2).
+
+RECOMMENDATIONS
+1. RIDDOR report must be submitted - this is a reportable occupational
+   disease diagnosed by a registered medical practitioner.
+2. Ryan must be immediately removed from exposure to isocyanates.
+   Redeployment to non-spray role recommended.
+3. Refer to respiratory specialist for full lung function assessment
+   and ongoing management.
+4. Review COSHH assessments for all spray booth operations.
+5. Health surveillance for all paint shop employees to be reviewed.
+6. Consider whether local exhaust ventilation in spray booths is adequate.
+
+EXPOSURE HISTORY
+Ryan has worked in the spray booth for 11 years. He uses a supplied-air
+respirator during spraying but reports that it is sometimes uncomfortable
+and fit-testing was last done 2 years ago. Booth extraction was serviced
+6 months ago.
+
+Products in use: DuPont Centari 600S, Standox VOC 2K Hardener (contains HDI)
+
+Dr. Helen Crawford
+GMC No: 4567890
+Consultant in Occupational Medicine
+Date: 24 March 2026
