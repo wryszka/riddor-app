@@ -5,7 +5,7 @@ import os
 from databricks.sdk import WorkspaceClient
 from openai import OpenAI
 
-MODEL = "databricks-meta-llama-3-3-70b-instruct"
+MODEL = "databricks-claude-sonnet-4-6"
 
 _client = None
 
