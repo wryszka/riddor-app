@@ -5,9 +5,31 @@ import os
 from databricks.sdk import WorkspaceClient
 from openai import OpenAI
 
-MODEL = os.environ.get("AI_ENDPOINT_NAME", "databricks-claude-sonnet-4-6")
-
 _client = None
+_model = None
+
+
+def _get_model() -> str:
+    """Resolve model: env var > auto-detect from available endpoints."""
+    global _model
+    if _model:
+        return _model
+    env = os.environ.get("AI_ENDPOINT_NAME")
+    if env:
+        _model = env
+        return _model
+    # Auto-detect: try Claude first, fall back to GPT OSS
+    w = WorkspaceClient()
+    try:
+        endpoints = [e.name for e in w.serving_endpoints.list()]
+    except Exception:
+        endpoints = []
+    for preferred in ["databricks-claude-sonnet-4-6", "databricks-claude-sonnet-4-5", "databricks-gpt-oss-120b", "databricks-gpt-5-4-mini"]:
+        if preferred in endpoints:
+            _model = preferred
+            return _model
+    _model = "databricks-claude-sonnet-4-6"
+    return _model
 
 
 def _get_client() -> OpenAI:
@@ -24,7 +46,7 @@ def _get_client() -> OpenAI:
 def _chat(system: str, user: str, temperature: float = 0.1, max_tokens: int = 2000) -> str:
     client = _get_client()
     resp = client.chat.completions.create(
-        model=MODEL,
+        model=_get_model(),
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
@@ -129,7 +151,7 @@ def chat_response(messages: list[dict]) -> str:
     client = _get_client()
     full_messages = [{"role": "system", "content": RIDDOR_CHAT_PROMPT}] + messages[-12:]
     resp = client.chat.completions.create(
-        model=MODEL,
+        model=_get_model(),
         messages=full_messages,
         temperature=0.3,
         max_tokens=1500,
