@@ -18,13 +18,20 @@ def _get_model() -> str:
     if env:
         _model = env
         return _model
-    # Auto-detect: try Claude first, fall back to GPT OSS
+    # Auto-detect: prefer Claude, then commercial GPT, then OSS
     w = WorkspaceClient()
     try:
         endpoints = [e.name for e in w.serving_endpoints.list()]
     except Exception:
         endpoints = []
-    for preferred in ["databricks-claude-sonnet-4-6", "databricks-claude-sonnet-4-5", "databricks-gpt-oss-120b", "databricks-gpt-5-4-mini"]:
+    for preferred in [
+        "databricks-claude-sonnet-4-6",
+        "databricks-claude-sonnet-4-5",
+        "databricks-gpt-5-4-mini",
+        "databricks-gpt-5-4",
+        "databricks-gpt-5-2",
+        "databricks-gpt-oss-120b",
+    ]:
         if preferred in endpoints:
             _model = preferred
             return _model
@@ -43,6 +50,34 @@ def _get_client() -> OpenAI:
     return _client
 
 
+def _extract_text(content) -> str:
+    """Extract plain text from response content — handles both str and list formats.
+
+    Some models (GPT) return content as a list of typed blocks, e.g.:
+      [{"type": "text", "text": "..."}, {"type": "reasoning", ...}]
+    Others (Claude) return a plain string.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict):
+                if block.get("type") == "text":
+                    parts.append(block.get("text", ""))
+                elif block.get("type") == "reasoning":
+                    # Extract from summary sub-blocks
+                    for s in block.get("summary", []):
+                        if isinstance(s, dict):
+                            parts.append(s.get("text", ""))
+            elif hasattr(block, "text"):
+                parts.append(block.text)
+        return "\n".join(parts).strip()
+    return str(content)
+
+
 def _chat(system: str, user: str, temperature: float = 0.1, max_tokens: int = 2000) -> str:
     client = _get_client()
     resp = client.chat.completions.create(
@@ -54,7 +89,7 @@ def _chat(system: str, user: str, temperature: float = 0.1, max_tokens: int = 20
         temperature=temperature,
         max_tokens=max_tokens,
     )
-    return resp.choices[0].message.content
+    return _extract_text(resp.choices[0].message.content)
 
 
 def _strip_fences(text: str) -> str:
@@ -95,7 +130,8 @@ RIDDOR_CHAT_PROMPT = """You are a RIDDOR (Reporting of Injuries, Diseases and Da
 - Be specific, cite RIDDOR categories
 - Plain English for H&S managers
 - If uncertain, err on side of reporting
-- Flag borderline cases"""
+- Flag borderline cases
+- Use plain text, not markdown formatting"""
 
 CLASSIFICATION_PROMPT = """You are a RIDDOR incident classification engine. Analyse the incident and return ONLY valid JSON:
 
@@ -156,4 +192,4 @@ def chat_response(messages: list[dict]) -> str:
         temperature=0.3,
         max_tokens=1500,
     )
-    return resp.choices[0].message.content
+    return _extract_text(resp.choices[0].message.content)
