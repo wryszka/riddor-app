@@ -10,32 +10,10 @@ _model = None
 
 
 def _get_model() -> str:
-    """Resolve model: env var > auto-detect from available endpoints."""
+    """Get model name from AI_ENDPOINT_NAME env var."""
     global _model
-    if _model:
-        return _model
-    env = os.environ.get("AI_ENDPOINT_NAME")
-    if env:
-        _model = env
-        return _model
-    # Auto-detect: prefer Claude, then commercial GPT, then OSS
-    w = WorkspaceClient()
-    try:
-        endpoints = [e.name for e in w.serving_endpoints.list()]
-    except Exception:
-        endpoints = []
-    for preferred in [
-        "databricks-claude-sonnet-4-6",
-        "databricks-claude-sonnet-4-5",
-        "databricks-gpt-5-4-mini",
-        "databricks-gpt-5-4",
-        "databricks-gpt-5-2",
-        "databricks-gpt-oss-120b",
-    ]:
-        if preferred in endpoints:
-            _model = preferred
-            return _model
-    _model = "databricks-claude-sonnet-4-6"
+    if _model is None:
+        _model = os.environ.get("AI_ENDPOINT_NAME", "databricks-claude-sonnet-4-6")
     return _model
 
 

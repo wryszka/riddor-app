@@ -8,4 +8,4 @@ command:
   - "0.0.0.0"
 env:
   - name: AI_ENDPOINT_NAME
-    value: "databricks-claude-sonnet-4-6"
+    value: "databricks-gpt-oss-120b"
