@@ -5,7 +5,7 @@ import os
 from databricks.sdk import WorkspaceClient
 from openai import OpenAI
 
-MODEL = "databricks-claude-sonnet-4-6"
+MODEL = os.environ.get("AI_ENDPOINT_NAME", "databricks-claude-sonnet-4-6")
 
 _client = None
 

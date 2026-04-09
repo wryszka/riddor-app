@@ -11,3 +11,5 @@ env:
     value: "lr_serverless_aws_us_catalog"
   - name: DATABRICKS_SCHEMA
     value: "riddor"
+  - name: AI_ENDPOINT_NAME
+    value: "databricks-claude-sonnet-4-6"
