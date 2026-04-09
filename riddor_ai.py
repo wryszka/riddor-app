@@ -70,13 +70,24 @@ def _chat(system: str, user: str, temperature: float = 0.1, max_tokens: int = 20
     return _extract_text(resp.choices[0].message.content)
 
 
-def _strip_fences(text: str) -> str:
+def _extract_json(text: str) -> str:
+    """Extract a JSON object from text that may contain reasoning preamble."""
+    import re
+    # Strip markdown code fences
     t = text.strip()
     if t.startswith("```"):
         t = t.split("\n", 1)[1] if "\n" in t else t[3:]
         if t.endswith("```"):
             t = t[:-3]
-    return t.strip()
+        t = t.strip()
+    # If it's already valid JSON, return it
+    if t.startswith("{"):
+        return t
+    # Find the first { ... } block (the JSON object) in the text
+    match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', t, re.DOTALL)
+    if match:
+        return match.group(0)
+    return t
 
 
 # ── System Prompts ────────────────────────────────────────────────────
@@ -144,7 +155,7 @@ def classify_incident(description: str) -> dict:
     """Classify an incident against RIDDOR categories."""
     raw = _chat(CLASSIFICATION_PROMPT, description)
     try:
-        return json.loads(_strip_fences(raw))
+        return json.loads(_extract_json(raw))
     except json.JSONDecodeError:
         return {
             "is_reportable": None,

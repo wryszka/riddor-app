@@ -134,7 +134,7 @@ elif step == "result":
         override_cat = st.selectbox(
             "Change category",
             options=list(INCIDENT_TYPE_CONFIG.keys()),
-            index=list(INCIDENT_TYPE_CONFIG.keys()).index(cls.get("category", "not_reportable")),
+            index=list(INCIDENT_TYPE_CONFIG.keys()).index(cls.get("category", "not_reportable")) if cls.get("category", "not_reportable") in INCIDENT_TYPE_CONFIG else len(INCIDENT_TYPE_CONFIG) - 1,
             format_func=lambda x: INCIDENT_TYPE_CONFIG[x]["label"],
             key="override_select",
         )
