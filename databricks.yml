@@ -35,6 +35,12 @@ targets:
           name: riddor-app-lr
           description: "RIDDOR Decision Support Application"
           source_code_path: .
+          resources:
+            - name: riddor-ai-endpoint
+              description: "Foundation Model for AI classification and chat"
+              serving_endpoint:
+                name: databricks-gpt-oss-120b
+                permission: CAN_QUERY
           permissions:
             - user_name: ${workspace.current_user.userName}
               level: CAN_MANAGE
