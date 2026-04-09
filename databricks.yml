@@ -1,19 +1,19 @@
 bundle:
   name: riddor-app
 
-workspace:
-  host: https://fevm-lr-serverless-aws-us.cloud.databricks.com
-  profile: DEFAULT
-
 sync:
   exclude:
     - .venv/
     - __pycache__/
+    - test_documents/
 
 targets:
   dev:
     mode: development
     default: true
+    workspace:
+      host: https://fevm-lr-serverless-aws-us.cloud.databricks.com
+      profile: DEFAULT
     resources:
       apps:
         riddor-app:
@@ -24,7 +24,25 @@ targets:
             - user_name: ${workspace.current_user.userName}
               level: CAN_MANAGE
 
+  free:
+    mode: development
+    workspace:
+      host: https://dbc-68fd0126-04c9.cloud.databricks.com
+      profile: free
+    resources:
+      apps:
+        riddor-app:
+          name: riddor-app-lr
+          description: "RIDDOR Decision Support Application"
+          source_code_path: .
+          permissions:
+            - user_name: ${workspace.current_user.userName}
+              level: CAN_MANAGE
+
   prod:
+    workspace:
+      host: https://fevm-lr-serverless-aws-us.cloud.databricks.com
+      profile: DEFAULT
     resources:
       apps:
         riddor-app:
