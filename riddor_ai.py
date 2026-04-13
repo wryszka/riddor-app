@@ -5,8 +5,8 @@ import os
 from databricks.sdk import WorkspaceClient
 from openai import OpenAI
 
-_client = None
 _model = None
+_workspace_client = None
 
 
 def _get_model() -> str:
@@ -17,15 +17,20 @@ def _get_model() -> str:
     return _model
 
 
+def _get_workspace_client() -> WorkspaceClient:
+    global _workspace_client
+    if _workspace_client is None:
+        _workspace_client = WorkspaceClient()
+    return _workspace_client
+
+
 def _get_client() -> OpenAI:
-    global _client
-    if _client is None:
-        w = WorkspaceClient()
-        _client = OpenAI(
-            api_key=w.config.oauth_token().access_token,
-            base_url=f"{w.config.host}/serving-endpoints",
-        )
-    return _client
+    """Create a fresh OpenAI client with a current token each time."""
+    w = _get_workspace_client()
+    return OpenAI(
+        api_key=w.config.oauth_token().access_token,
+        base_url=f"{w.config.host}/serving-endpoints",
+    )
 
 
 def _extract_text(content) -> str:
