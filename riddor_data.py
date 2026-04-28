@@ -1,6 +1,17 @@
-"""RIDDOR reference data, mock incidents, and classification configs."""
+"""RIDDOR reference data, mock incidents, and classification configs.
+
+Mock data uses a fixed reference date (REFERENCE_DATE) for all incidents,
+then `_relative()` rewrites them to be relative to today at module load time.
+This way the demo always shows a realistic mix of overdue/current cases
+no matter when it's run.
+"""
 
 from datetime import date, datetime, timedelta
+
+# All incident dates below are written as if today were 2026-04-01.
+# At module load time, we shift every date so the same offsets apply to
+# the actual current date.
+REFERENCE_DATE = date(2026, 4, 1)
 
 # ── Colour & label configs ────────────────────────────────────────────
 
@@ -33,14 +44,60 @@ def get_days_remaining(deadline_str: str | None) -> int | None:
         return None
 
 
-# ── Mock data ─────────────────────────────────────────────────────────
+# ── Date-shifting so demo always looks fresh ─────────────────────────
 
-MOCK_INCIDENTS = [
+_SHIFT_DAYS = (date.today() - REFERENCE_DATE).days
+
+
+def _shift_date(s: str | None) -> str | None:
+    """Shift a YYYY-MM-DD or ISO datetime string by _SHIFT_DAYS."""
+    if not s:
+        return s
+    try:
+        if "T" in s:
+            dt = datetime.fromisoformat(s)
+            return (dt + timedelta(days=_SHIFT_DAYS)).isoformat()
+        d = datetime.strptime(s, "%Y-%m-%d").date()
+        return (d + timedelta(days=_SHIFT_DAYS)).strftime("%Y-%m-%d")
+    except (ValueError, TypeError):
+        return s
+
+
+def _shift_incidents(incidents: list[dict]) -> list[dict]:
+    date_fields = ("incident_date", "created_at", "reporting_deadline", "submitted_at")
+    out = []
+    for inc in incidents:
+        new = dict(inc)
+        for f in date_fields:
+            if new.get(f):
+                new[f] = _shift_date(new[f])
+        # Update reference number to reflect new date
+        if new.get("incident_date"):
+            d = new["incident_date"][:10].replace("-", "")
+            ref_suffix = new["reference"].split("-")[-1]
+            new["reference"] = f"RIDDOR-{d}-{ref_suffix}"
+        out.append(new)
+    return out
+
+
+def _shift_actions(actions: list[dict]) -> list[dict]:
+    out = []
+    for a in actions:
+        new = dict(a)
+        if new.get("timestamp"):
+            new["timestamp"] = _shift_date(new["timestamp"])
+        out.append(new)
+    return out
+
+
+# ── Mock data (raw — dates relative to REFERENCE_DATE) ───────────────
+
+_RAW_INCIDENTS = [
     {
         "id": "inc-001",
-        "reference": "RIDDOR-20260315-A1B2",
-        "created_at": "2026-03-15T09:30:00",
-        "incident_date": "2026-03-15",
+        "reference": "RIDDOR-20260322-A1B2",
+        "created_at": "2026-03-22T09:30:00",
+        "incident_date": "2026-03-22",
         "incident_type": "specified_injury",
         "person_name": "James Whitfield",
         "person_type": "worker",
@@ -63,17 +120,17 @@ MOCK_INCIDENTS = [
         "ai_reasoning": "A fracture to the forearm (radius) is a specified injury under RIDDOR as it is a fracture other than to fingers, thumbs, or toes.",
         "manager_override": None,
         "status": "open",
-        "reporting_deadline": "2026-03-25",
+        "reporting_deadline": "2026-03-27",
         "hse_reference": None,
         "submitted_at": None,
         "reporter_name": "Sarah Mitchell",
-        "absence_days": 12,
+        "absence_days": 9,
     },
     {
         "id": "inc-002",
-        "reference": "RIDDOR-20260310-C3D4",
-        "created_at": "2026-03-10T14:15:00",
-        "incident_date": "2026-03-10",
+        "reference": "RIDDOR-20260305-C3D4",
+        "created_at": "2026-03-05T14:15:00",
+        "incident_date": "2026-03-05",
         "incident_type": "over_7_day",
         "person_name": "Priya Sharma",
         "person_type": "worker",
@@ -87,7 +144,7 @@ MOCK_INCIDENTS = [
             "category_label": "Over-7-Day Incapacitation",
             "confidence": "high",
             "reasoning": "The worker has been absent for more than 7 consecutive days following the accident (not counting the day of the accident). This meets the over-7-day incapacitation threshold.",
-            "reporting_deadline": "Within 15 days of the accident (by 2026-03-25)",
+            "reporting_deadline": "Within 15 days of the accident (by 2026-03-20)",
             "reporting_method": "Report online at www.hse.gov.uk/riddor",
             "key_factors": ["Worker", "Absence exceeding 7 days", "Unable to perform normal duties"],
             "actions_required": ["Report to HSE within 15 days", "Review forklift operating procedures", "Investigate pallet securing methods"],
@@ -96,11 +153,11 @@ MOCK_INCIDENTS = [
         "ai_reasoning": "The worker has been absent for more than 7 consecutive days following the accident.",
         "manager_override": None,
         "status": "pending_report",
-        "reporting_deadline": "2026-03-25",
+        "reporting_deadline": "2026-03-20",
         "hse_reference": None,
         "submitted_at": None,
         "reporter_name": "David Chen",
-        "absence_days": 18,
+        "absence_days": 27,
     },
     {
         "id": "inc-003",
@@ -236,9 +293,9 @@ MOCK_INCIDENTS = [
     },
     {
         "id": "inc-007",
-        "reference": "RIDDOR-20260322-M3N4",
-        "created_at": "2026-03-22T13:00:00",
-        "incident_date": "2026-03-22",
+        "reference": "RIDDOR-20260324-M3N4",
+        "created_at": "2026-03-24T13:00:00",
+        "incident_date": "2026-03-24",
         "incident_type": "specified_injury",
         "person_name": "Angela Foster",
         "person_type": "worker",
@@ -261,11 +318,11 @@ MOCK_INCIDENTS = [
         "ai_reasoning": "Burns covering more than 10% of the body are a specified injury under RIDDOR.",
         "manager_override": None,
         "status": "investigating",
-        "reporting_deadline": "2026-04-01",
+        "reporting_deadline": "2026-04-03",
         "hse_reference": None,
         "submitted_at": None,
         "reporter_name": "Mark Thompson",
-        "absence_days": 6,
+        "absence_days": 7,
     },
     {
         "id": "inc-008",
@@ -302,9 +359,9 @@ MOCK_INCIDENTS = [
     },
     {
         "id": "inc-009",
-        "reference": "RIDDOR-20260328-Q7R8",
-        "created_at": "2026-03-28T10:30:00",
-        "incident_date": "2026-03-28",
+        "reference": "RIDDOR-20260318-Q7R8",
+        "created_at": "2026-03-18T10:30:00",
+        "incident_date": "2026-03-18",
         "incident_type": "over_7_day",
         "person_name": "Lisa Nguyen",
         "person_type": "worker",
@@ -318,7 +375,7 @@ MOCK_INCIDENTS = [
             "category_label": "Over-7-Day Incapacitation",
             "confidence": "high",
             "reasoning": "The worker will be absent for 14 days which exceeds the 7-day threshold.",
-            "reporting_deadline": "Within 15 days of the accident (by 2026-04-12)",
+            "reporting_deadline": "Within 15 days of the accident (by 2026-04-02)",
             "reporting_method": "Report online at www.hse.gov.uk/riddor",
             "key_factors": ["Worker", "Expected absence of 14 days", "Exceeds 7-day threshold"],
             "actions_required": ["Monitor absence - report once 7 days confirmed", "Review loading dock edge markings"],
@@ -327,11 +384,11 @@ MOCK_INCIDENTS = [
         "ai_reasoning": "Worker will be absent for 14 days, exceeding the 7-day incapacitation threshold.",
         "manager_override": None,
         "status": "open",
-        "reporting_deadline": "2026-04-12",
+        "reporting_deadline": "2026-04-02",
         "hse_reference": None,
         "submitted_at": None,
         "reporter_name": "Sarah Mitchell",
-        "absence_days": 2,
+        "absence_days": 13,
     },
     {
         "id": "inc-010",
@@ -368,18 +425,24 @@ MOCK_INCIDENTS = [
     },
 ]
 
-MOCK_ACTIONS = [
-    {"id": "act-001", "incident_id": "inc-001", "action_type": "created", "description": "Incident report filed", "performed_by": "Sarah Mitchell", "timestamp": "2026-03-15T09:30:00"},
-    {"id": "act-002", "incident_id": "inc-001", "action_type": "classified", "description": "AI classified as Specified Injury (fracture)", "performed_by": "System", "timestamp": "2026-03-15T09:31:00"},
-    {"id": "act-003", "incident_id": "inc-001", "action_type": "note", "description": "Investigation ongoing — reviewing CCTV footage of slip", "performed_by": "David Chen", "timestamp": "2026-03-16T10:00:00"},
-    {"id": "act-004", "incident_id": "inc-002", "action_type": "created", "description": "Incident report filed", "performed_by": "David Chen", "timestamp": "2026-03-10T14:15:00"},
-    {"id": "act-005", "incident_id": "inc-002", "action_type": "classified", "description": "AI classified as Over-7-Day Incapacitation", "performed_by": "System", "timestamp": "2026-03-10T14:16:00"},
-    {"id": "act-006", "incident_id": "inc-002", "action_type": "absence_update", "description": "Absence day count: 18 days. RIDDOR threshold exceeded.", "performed_by": "System", "timestamp": "2026-03-28T08:00:00"},
+_RAW_ACTIONS = [
+    {"id": "act-001", "incident_id": "inc-001", "action_type": "created", "description": "Incident report filed", "performed_by": "Sarah Mitchell", "timestamp": "2026-03-22T09:30:00"},
+    {"id": "act-002", "incident_id": "inc-001", "action_type": "classified", "description": "AI classified as Specified Injury (fracture)", "performed_by": "System", "timestamp": "2026-03-22T09:31:00"},
+    {"id": "act-003", "incident_id": "inc-001", "action_type": "note", "description": "Investigation ongoing — reviewing CCTV footage of slip", "performed_by": "David Chen", "timestamp": "2026-03-23T10:00:00"},
+    {"id": "act-004", "incident_id": "inc-002", "action_type": "created", "description": "Incident report filed", "performed_by": "David Chen", "timestamp": "2026-03-05T14:15:00"},
+    {"id": "act-005", "incident_id": "inc-002", "action_type": "classified", "description": "AI classified as Over-7-Day Incapacitation", "performed_by": "System", "timestamp": "2026-03-05T14:16:00"},
+    {"id": "act-006", "incident_id": "inc-002", "action_type": "absence_update", "description": "Absence day count: 27 days. RIDDOR threshold exceeded — report overdue.", "performed_by": "System", "timestamp": "2026-03-30T08:00:00"},
     {"id": "act-007", "incident_id": "inc-003", "action_type": "created", "description": "Dangerous occurrence reported", "performed_by": "Mark Thompson", "timestamp": "2026-03-05T11:00:00"},
     {"id": "act-008", "incident_id": "inc-003", "action_type": "submitted", "description": "RIDDOR report submitted to HSE. Ref: HSE-2026-88421", "performed_by": "Sarah Mitchell", "timestamp": "2026-03-05T15:30:00"},
     {"id": "act-009", "incident_id": "inc-004", "action_type": "created", "description": "Visitor incident report filed", "performed_by": "Sarah Mitchell", "timestamp": "2026-03-01T16:45:00"},
     {"id": "act-010", "incident_id": "inc-004", "action_type": "submitted", "description": "RIDDOR report submitted to HSE. Ref: HSE-2026-87654", "performed_by": "Sarah Mitchell", "timestamp": "2026-03-01T18:00:00"},
     {"id": "act-011", "incident_id": "inc-008", "action_type": "created", "description": "Fatal incident report filed", "performed_by": "David Chen", "timestamp": "2026-01-20T09:00:00"},
     {"id": "act-012", "incident_id": "inc-008", "action_type": "submitted", "description": "RIDDOR report submitted to HSE by phone. Ref: HSE-2026-71002", "performed_by": "David Chen", "timestamp": "2026-01-20T09:45:00"},
-    {"id": "act-013", "incident_id": "inc-008", "action_type": "note", "description": "HSE inspector visit scheduled for 2026-01-22", "performed_by": "Mark Thompson", "timestamp": "2026-01-20T14:00:00"},
+    {"id": "act-013", "incident_id": "inc-008", "action_type": "note", "description": "HSE inspector visit scheduled", "performed_by": "Mark Thompson", "timestamp": "2026-01-20T14:00:00"},
 ]
+
+
+# ── Public exports — dates shifted to be relative to today ───────────
+
+MOCK_INCIDENTS = _shift_incidents(_RAW_INCIDENTS)
+MOCK_ACTIONS = _shift_actions(_RAW_ACTIONS)
