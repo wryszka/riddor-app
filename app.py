@@ -82,6 +82,16 @@ with st.sidebar:
 **Records**: Keep for 3+ years
     """)
     st.markdown("---")
+    if st.button("🔄 Reset Demo Data", use_container_width=True, help="Restore all incidents and chat to their original state"):
+        from riddor_data import MOCK_INCIDENTS, MOCK_ACTIONS
+        st.session_state.incidents = {i["id"]: i for i in MOCK_INCIDENTS}
+        st.session_state.actions = list(MOCK_ACTIONS)
+        st.session_state.chat_messages = []
+        # Reset Report Incident wizard state
+        for k in ("report_step", "classification", "new_ref"):
+            st.session_state.pop(k, None)
+        st.toast("Demo reset to original state", icon="✅")
+        st.rerun()
     st.caption("⚠️ AI-assisted — always verify critical decisions with HSE directly")
 
 # ── Page navigation ───────────────────────────────────────────────────
