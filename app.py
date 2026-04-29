@@ -91,8 +91,7 @@ with st.sidebar:
         for k in ("report_step", "classification", "new_ref"):
             st.session_state.pop(k, None)
         # Reset COSHH state
-        st.session_state.sds_documents = {}
-        st.session_state.active_sds = None
+        st.session_state.sds_doc = None
         # Reset Data Assistant chat
         st.session_state.data_chat_messages = []
         st.toast("Demo reset to original state", icon="✅")
@@ -100,12 +99,16 @@ with st.sidebar:
     st.caption("⚠️ AI-assisted — always verify critical decisions with HSE directly")
 
 # ── Page navigation ───────────────────────────────────────────────────
-pg = st.navigation([
-    st.Page("pages/1_Dashboard.py", title="Case Monitor", icon="📊"),
-    st.Page("pages/2_Report_Incident.py", title="Report Incident", icon="📝"),
-    st.Page("pages/3_Archive.py", title="Past Reports", icon="📁"),
-    st.Page("pages/4_AI_Assistant.py", title="AI Assistant", icon="💬"),
-    st.Page("pages/5_COSHH.py", title="COSHH Assistant", icon="🧪"),
-    st.Page("pages/6_Data_Assistant.py", title="Data Assistant", icon="📚"),
-])
+pg = st.navigation({
+    "🛡️ RIDDOR": [
+        st.Page("pages/1_Dashboard.py", title="Case Monitor", icon="📊"),
+        st.Page("pages/2_Report_Incident.py", title="Report Incident", icon="📝"),
+        st.Page("pages/3_Archive.py", title="Past Reports", icon="📁"),
+        st.Page("pages/4_AI_Assistant.py", title="AI Assistant", icon="💬"),
+        st.Page("pages/6_Data_Assistant.py", title="Data Assistant", icon="📚"),
+    ],
+    "🧪 COSHH": [
+        st.Page("pages/5_COSHH.py", title="COSHH Assistant", icon="🧪"),
+    ],
+})
 pg.run()

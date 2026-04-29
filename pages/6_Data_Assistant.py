@@ -11,7 +11,9 @@ if "data_chat_messages" not in st.session_state:
 
 # ── Show what data is available ──────────────────────────────────────
 incidents = list(st.session_state.get("incidents", {}).values())
-sds_documents = st.session_state.get("sds_documents", {})
+sds_doc = st.session_state.get("sds_doc")
+# Build a single-entry dict for compatibility with data_chat()
+sds_documents = {sds_doc["name"]: {"structured": sds_doc["structured"]}} if sds_doc else {}
 
 c1, c2, c3 = st.columns(3)
 with c1:
@@ -21,7 +23,7 @@ with c2:
     submitted_count = sum(1 for i in incidents if i.get("status") == "submitted")
     st.metric("Submitted to HSE", submitted_count)
 with c3:
-    st.metric("COSHH Documents", len(sds_documents))
+    st.metric("COSHH Document", "1 loaded" if sds_doc else "—")
 
 st.markdown("---")
 
