@@ -250,3 +250,111 @@ def chat_response(messages: list[dict]) -> str:
         max_tokens=1500,
     )
     return _extract_text(resp.choices[0].message.content)
+
+
+# ── COSHH / Safety Data Sheet support ────────────────────────────────
+
+SDS_EXTRACTION_PROMPT = """You are a COSHH (Control of Substances Hazardous to Health) document analysis engine. The user will provide the text of a Safety Data Sheet (SDS). Extract the key COSHH-relevant information and return ONLY valid JSON in this exact schema (use null when info is not in the document — do not guess):
+
+{
+  "product": {
+    "name": "Product trade name",
+    "code": "Product code if shown",
+    "cas_number": "CAS number if shown",
+    "ec_number": "EC number if shown"
+  },
+  "supplier": {
+    "name": "Manufacturer/supplier name",
+    "address": "Address",
+    "phone": "Phone number",
+    "emergency_phone": "Emergency contact"
+  },
+  "hazards": {
+    "ghs_classifications": ["e.g. Skin Irrit. 2", "Eye Irrit. 2"],
+    "pictograms": ["e.g. GHS07 (Exclamation Mark)", "GHS08 (Health Hazard)"],
+    "signal_word": "Warning|Danger|null",
+    "h_statements": ["H315: Causes skin irritation", "..."],
+    "p_statements": ["P280: Wear protective gloves...", "..."]
+  },
+  "ppe": {
+    "eyes": "Eye/face protection required",
+    "hands": "Glove type and material",
+    "respiratory": "Respiratory protection",
+    "body": "Body/skin protection"
+  },
+  "first_aid": {
+    "eye_contact": "Steps for eye contact",
+    "skin_contact": "Steps for skin contact",
+    "inhalation": "Steps for inhalation",
+    "ingestion": "Steps for ingestion"
+  },
+  "fire_fighting": {
+    "extinguishing_media": "Suitable extinguishers",
+    "unsuitable_media": "Unsuitable extinguishers",
+    "hazardous_combustion": "Hazardous combustion products"
+  },
+  "storage": {
+    "conditions": "Storage conditions (temperature, ventilation)",
+    "incompatible_materials": "Materials to keep away from",
+    "container": "Container type/material"
+  },
+  "exposure_limits": {
+    "wel_8h_twa": "8-hour Workplace Exposure Limit",
+    "stel_15min": "15-minute Short-Term Exposure Limit",
+    "biological_limits": "Biological limit values if any"
+  },
+  "spill_response": "Steps for accidental release / spillage",
+  "disposal": "Disposal considerations",
+  "physical_state": "Liquid|Solid|Gas|Aerosol",
+  "appearance": "Colour and form description",
+  "summary": "2-3 sentence plain-English summary of what this substance is and the key risks"
+}
+
+Return ONLY the JSON object — no preamble, no markdown fences, no explanation."""
+
+
+SDS_CHAT_SYSTEM_PROMPT = """You are a COSHH safety data sheet expert assistant. The user has uploaded a Safety Data Sheet and will ask questions about it. You have the full document text and a structured extraction available as context.
+
+Rules:
+- Answer ONLY based on what's in the SDS. If the SDS doesn't say, say so explicitly — don't invent information.
+- Cite which SDS section your answer comes from where possible (e.g. "Section 4: First-aid measures").
+- Be specific and practical — these answers may inform real workplace safety decisions.
+- For questions about whether a substance is "safe" or "okay to use", explain the actual hazards and required controls rather than giving a yes/no.
+- If asked about something outside the SDS (e.g. general chemistry, comparison to other products), politely redirect to what the SDS actually contains.
+- Use plain English, not chemistry jargon, where possible.
+- Format your answers naturally without unnecessary markdown."""
+
+
+def extract_sds(text: str) -> dict:
+    """Extract structured COSHH data from SDS text."""
+    raw = _chat(SDS_EXTRACTION_PROMPT, text, max_tokens=3000)
+    try:
+        return json.loads(_extract_json(raw))
+    except json.JSONDecodeError:
+        return {
+            "summary": "Failed to parse the document. The model returned text that was not valid JSON.",
+            "_raw_response": raw,
+        }
+
+
+def sds_chat(messages: list[dict], document_text: str, structured: dict) -> str:
+    """Answer a question about a specific SDS using its full text + structured extraction as context."""
+    client = _get_client()
+    # Truncate very long documents to fit context (keep first ~25k chars)
+    doc_snippet = document_text[:25000]
+    if len(document_text) > 25000:
+        doc_snippet += "\n\n[... document truncated ...]"
+    context = (
+        f"## Structured extraction\n```json\n{json.dumps(structured, indent=2)}\n```\n\n"
+        f"## Full document text\n{doc_snippet}"
+    )
+    full_messages = [
+        {"role": "system", "content": SDS_CHAT_SYSTEM_PROMPT + "\n\n" + context},
+    ] + messages[-10:]
+    resp = client.chat.completions.create(
+        model=_get_model(),
+        messages=full_messages,
+        temperature=0.2,
+        max_tokens=1500,
+    )
+    return _extract_text(resp.choices[0].message.content)

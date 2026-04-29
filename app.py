@@ -90,6 +90,9 @@ with st.sidebar:
         # Reset Report Incident wizard state
         for k in ("report_step", "classification", "new_ref"):
             st.session_state.pop(k, None)
+        # Reset COSHH state
+        st.session_state.sds_documents = {}
+        st.session_state.active_sds = None
         st.toast("Demo reset to original state", icon="✅")
         st.rerun()
     st.caption("⚠️ AI-assisted — always verify critical decisions with HSE directly")
@@ -100,5 +103,6 @@ pg = st.navigation([
     st.Page("pages/2_Report_Incident.py", title="Report Incident", icon="📝"),
     st.Page("pages/3_Archive.py", title="Past Reports", icon="📁"),
     st.Page("pages/4_AI_Assistant.py", title="AI Assistant", icon="💬"),
+    st.Page("pages/5_COSHH.py", title="COSHH Assistant", icon="🧪"),
 ])
 pg.run()
