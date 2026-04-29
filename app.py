@@ -118,6 +118,7 @@ with st.sidebar:
             st.session_state.pop(k, None)
         # Reset COSHH state
         st.session_state.sds_doc = None
+        st.session_state.coshh_chat = []
         st.toast("Demo reset to original state", icon="✅")
         st.rerun()
     st.caption("⚠️ AI-assisted — always verify critical decisions with HSE directly")
