@@ -1,4 +1,4 @@
-"""COSHH Assistant — upload SDS, see summary, and ask questions (general or document-specific)."""
+"""COSHH Assistant — upload SDS, see Condensed COSHH Assessment, download PDF, ask questions."""
 
 import io
 import streamlit as st
@@ -8,7 +8,6 @@ st.caption("Upload a Safety Data Sheet for substance-specific guidance, or ask g
 
 # ── Session state ─────────────────────────────────────────────────────
 if "sds_doc" not in st.session_state:
-    # {"name": str, "text": str, "structured": dict}
     st.session_state.sds_doc = None
 if "coshh_chat" not in st.session_state:
     st.session_state.coshh_chat = []
@@ -51,7 +50,7 @@ def extract_text(uploaded_file) -> str:
 
 # ── Upload box ────────────────────────────────────────────────────────
 
-with st.expander("📄 Upload a Safety Data Sheet (optional)", expanded=st.session_state.sds_doc is None):
+with st.expander("📄 Upload a Safety Data Sheet", expanded=st.session_state.sds_doc is None):
     uploaded = st.file_uploader(
         "PDF, DOCX, or TXT",
         type=["pdf", "docx", "txt"],
@@ -67,7 +66,7 @@ with st.expander("📄 Upload a Safety Data Sheet (optional)", expanded=st.sessi
                 if not text.strip():
                     st.error("Could not extract any text from this file. If it's a scanned PDF, OCR is required.")
                 else:
-                    with st.spinner("AI is extracting COSHH information..."):
+                    with st.spinner("AI is generating the Condensed COSHH Assessment..."):
                         from riddor_ai import extract_sds
                         structured = extract_sds(text)
                     st.session_state.sds_doc = {
@@ -75,77 +74,149 @@ with st.expander("📄 Upload a Safety Data Sheet (optional)", expanded=st.sessi
                         "text": text,
                         "structured": structured,
                     }
-                    st.session_state.coshh_chat = []  # reset chat for new doc
-                    st.toast(f"Extracted {uploaded.name}", icon="✅")
+                    st.session_state.coshh_chat = []
+                    st.toast(f"Assessment generated for {uploaded.name}", icon="✅")
                     st.rerun()
             except Exception as e:
                 st.error(f"Failed to process file: {e}")
 
 
-# ── Summary card (only if doc uploaded) ──────────────────────────────
+# ── Condensed COSHH Assessment display ───────────────────────────────
 
 doc = st.session_state.sds_doc
 if doc:
     structured = doc["structured"]
+    product = structured.get("product") or {}
+    hazards = structured.get("hazards") or {}
+    ppe = structured.get("ppe") or {}
+    first_aid = structured.get("first_aid") or {}
+    storage = structured.get("storage") or {}
+
+    # Header with download button
+    h1, h2 = st.columns([3, 1])
+    with h1:
+        st.markdown("### 📋 Condensed COSHH Assessment")
+    with h2:
+        try:
+            from coshh_pdf import build_coshh_pdf
+            pdf_bytes = build_coshh_pdf(structured, doc["name"])
+            product_name = product.get("name") or doc["name"].rsplit(".", 1)[0]
+            safe_name = "".join(c if c.isalnum() else "_" for c in product_name)[:50]
+            st.download_button(
+                "⬇️ Download PDF",
+                data=pdf_bytes,
+                file_name=f"COSHH_Assessment_{safe_name}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
+        except Exception as e:
+            st.error(f"PDF generation failed: {e}")
 
     if "_raw_response" in structured:
         st.warning("Extraction failed — showing raw model output.")
         with st.expander("Raw response"):
             st.code(structured.get("_raw_response", ""), language=None)
     else:
-        product = structured.get("product") or {}
-        supplier = structured.get("supplier") or {}
-        hazards = structured.get("hazards") or {}
+        # ── Container styled to look like an assessment document ────
+        st.markdown(
+            """<style>
+            .coshh-doc { border: 1px solid rgba(128,128,128,0.25); border-radius: 12px; padding: 24px 28px; background: rgba(248,250,252,0.5); }
+            @media (prefers-color-scheme: dark) { .coshh-doc { background: rgba(30,41,59,0.4); } }
+            .coshh-row { margin-bottom: 6px; }
+            .coshh-label { font-weight: 700; color: var(--text-color); display: inline-block; min-width: 170px; }
+            .coshh-section-title { font-weight: 700; color: #2563eb; margin-top: 14px; margin-bottom: 4px; }
+            .coshh-risk { display: inline-block; padding: 6px 16px; border-radius: 6px; font-weight: 700; color: white; font-size: 14px; }
+            .coshh-risk.low { background: #16a34a; }
+            .coshh-risk.medium { background: #d97706; }
+            .coshh-risk.high { background: #dc2626; }
+            </style>""",
+            unsafe_allow_html=True,
+        )
 
-        # Header row
-        header_left, header_right = st.columns([3, 1])
-        with header_left:
-            st.markdown(f"### {product.get('name') or doc['name']}")
-            bits = []
-            if product.get("code"): bits.append(f"Code: {product['code']}")
-            if product.get("cas_number"): bits.append(f"CAS: {product['cas_number']}")
-            if structured.get("physical_state"): bits.append(structured["physical_state"])
-            if bits: st.caption(" · ".join(bits))
-            if supplier.get("name"): st.caption(f"Supplier: {supplier['name']}")
-        with header_right:
-            signal = hazards.get("signal_word")
-            if signal:
-                color = "#dc2626" if signal.lower() == "danger" else "#d97706"
-                st.markdown(
-                    f'<div style="text-align:right"><span style="background:{color};color:white;padding:6px 14px;border-radius:6px;font-weight:700;font-size:14px">{signal.upper()}</span></div>',
-                    unsafe_allow_html=True,
-                )
+        with st.container():
+            st.markdown('<div class="coshh-doc">', unsafe_allow_html=True)
 
-        if structured.get("summary"):
-            st.info(structured["summary"])
-
-        s1, s2, s3 = st.columns(3)
-        with s1:
-            st.markdown("**⚠️ Key Hazards**")
-            for h in (hazards.get("h_statements") or [])[:5]:
-                st.caption(f"• {h}")
-            if not hazards.get("h_statements"):
-                st.caption("Not specified")
-        with s2:
-            st.markdown("**🥽 PPE Required**")
-            ppe = structured.get("ppe") or {}
-            for label, value in [("Eyes", ppe.get("eyes")), ("Hands", ppe.get("hands")), ("Resp.", ppe.get("respiratory"))]:
+            def row(label: str, value):
                 if value:
-                    st.caption(f"**{label}:** {value}")
-            if not any(ppe.values() if ppe else []):
-                st.caption("Not specified")
-        with s3:
-            st.markdown("**📦 Storage & Limits**")
-            storage = structured.get("storage") or {}
-            limits = structured.get("exposure_limits") or {}
-            if storage.get("conditions"): st.caption(f"**Storage:** {storage['conditions']}")
-            if limits.get("wel_8h_twa"): st.caption(f"**8h WEL:** {limits['wel_8h_twa']}")
-            if limits.get("stel_15min"): st.caption(f"**STEL:** {limits['stel_15min']}")
+                    st.markdown(f'<div class="coshh-row"><span class="coshh-label">{label}:</span> {value}</div>', unsafe_allow_html=True)
 
-        with st.expander("View full extraction"):
+            def section(title: str, body):
+                if not body:
+                    return
+                st.markdown(f'<div class="coshh-section-title">{title}:</div>', unsafe_allow_html=True)
+                if isinstance(body, list):
+                    items = [b for b in body if b]
+                    if items:
+                        st.markdown("\n".join(f"- {x}" for x in items))
+                elif isinstance(body, dict):
+                    items = [(k, v) for k, v in body.items() if v]
+                    if items:
+                        for k, v in items:
+                            st.markdown(f"- **{k}:** {v}")
+                else:
+                    st.markdown(str(body))
+
+            # Header rows
+            row("Product Name", product.get("name") or doc["name"])
+            row("Use of Product", structured.get("use_of_product"))
+            row("Form", structured.get("form") or structured.get("appearance"))
+            row("pH", structured.get("ph"))
+
+            # Sections
+            section("Method of Application", structured.get("method_of_application"))
+
+            clp = structured.get("clp_hazard_summary")
+            if not clp and hazards.get("h_statements"):
+                clp = "; ".join(hazards["h_statements"][:3])
+            section("CLP Hazard Information", clp)
+
+            routes = structured.get("routes_of_entry") or []
+            if routes:
+                section("Routes of Entry", ", ".join(routes))
+
+            ppe_items = []
+            for label, value in [
+                ("Hands", ppe.get("hands")),
+                ("Eyes", ppe.get("eyes")),
+                ("Respiratory", ppe.get("respiratory")),
+                ("Body", ppe.get("body")),
+            ]:
+                if value:
+                    ppe_items.append(f"**{label}:** {value}")
+            section("Mandatory PPE", ppe_items)
+
+            fa_dict = {}
+            if first_aid.get("skin_contact"): fa_dict["Skin contact"] = first_aid["skin_contact"]
+            if first_aid.get("eye_contact"): fa_dict["Eye contact"] = first_aid["eye_contact"]
+            if first_aid.get("inhalation"): fa_dict["Inhalation"] = first_aid["inhalation"]
+            if first_aid.get("ingestion"): fa_dict["Ingestion"] = first_aid["ingestion"]
+            section("First Aid Measures", fa_dict)
+
+            section("Spillage Procedure", structured.get("spill_response"))
+
+            storage_parts = []
+            if storage.get("conditions"): storage_parts.append(storage["conditions"])
+            if storage.get("container"): storage_parts.append(f"Container: {storage['container']}")
+            if storage.get("incompatible_materials"): storage_parts.append(f"Keep away from: {storage['incompatible_materials']}")
+            section("Handling and Storage", " ".join(storage_parts) if storage_parts else None)
+
+            section("General Precautions", structured.get("general_precautions"))
+            section("Disposal", structured.get("disposal"))
+
+            # Risk rating
+            rating = (structured.get("risk_rating") or "LOW").upper()
+            cls = "low" if "LOW" in rating else ("high" if "HIGH" in rating else "medium")
+            st.markdown(
+                f'<div class="coshh-section-title">Risk Rating (after control measures):</div>'
+                f'<span class="coshh-risk {cls}">{rating}</span>',
+                unsafe_allow_html=True,
+            )
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with st.expander("View full structured extraction (JSON)"):
             st.json(structured, expanded=False)
 
-    # Replace document button
     if st.button("📄 Replace document"):
         st.session_state.sds_doc = None
         st.session_state.coshh_chat = []
@@ -163,7 +234,6 @@ else:
 
 
 def _get_answer(messages: list[dict]) -> str:
-    """Route to doc-specific or general COSHH chat depending on whether a doc is loaded."""
     if doc:
         from riddor_ai import sds_chat
         return sds_chat(messages, doc["text"], doc["structured"])
@@ -172,7 +242,6 @@ def _get_answer(messages: list[dict]) -> str:
         return coshh_chat(messages)
 
 
-# Example prompts on empty chat
 if not st.session_state.coshh_chat:
     if doc:
         EXAMPLES = [
@@ -201,12 +270,10 @@ if not st.session_state.coshh_chat:
                         st.session_state.coshh_chat.append({"role": "assistant", "content": f"Error: {e}"})
                 st.rerun()
 
-# Chat history
 for msg in st.session_state.coshh_chat:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Chat input — always visible
 if prompt := st.chat_input("Ask about COSHH..."):
     st.session_state.coshh_chat.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -227,4 +294,4 @@ if st.session_state.coshh_chat:
         st.session_state.coshh_chat = []
         st.rerun()
 
-st.caption("⚠️ AI-assisted summary — always verify against the original SDS before making safety decisions")
+st.caption("⚠️ AI-generated assessment — always verify against the original SDS before making safety decisions")

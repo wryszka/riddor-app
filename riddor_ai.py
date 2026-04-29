@@ -308,6 +308,14 @@ SDS_EXTRACTION_PROMPT = """You are a COSHH (Control of Substances Hazardous to H
   "disposal": "Disposal considerations",
   "physical_state": "Liquid|Solid|Gas|Aerosol",
   "appearance": "Colour and form description",
+  "form": "Concise physical form description, e.g. 'Colourless liquid', 'White powder'",
+  "ph": "pH value or range, e.g. '9-10 (mild alkaline)', null if not applicable",
+  "use_of_product": "What the product is used for in 1-2 sentences",
+  "method_of_application": "How the product is applied or used in workplace, including dilution rates and exposure scenarios. 2-4 sentences.",
+  "clp_hazard_summary": "1-2 sentence plain-English summary of the CLP hazard classification (e.g. 'Irritant to eyes and skin')",
+  "routes_of_entry": ["Skin contact", "Eye contact", "Inhalation", "Ingestion"],
+  "general_precautions": "General handling precautions in 1-2 sentences",
+  "risk_rating": "LOW|MEDIUM|HIGH — overall risk rating AFTER control measures (PPE + handling procedures) are applied. Most substances correctly handled with PPE are LOW. Use HIGH only for severely hazardous substances even with PPE.",
   "summary": "2-3 sentence plain-English summary of what this substance is and the key risks"
 }
 
