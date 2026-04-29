@@ -214,10 +214,7 @@ if doc:
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-        with st.expander("View full structured extraction (JSON)"):
-            st.json(structured, expanded=False)
-
-    if st.button("📄 Replace document"):
+    if st.button("📄 New document"):
         st.session_state.sds_doc = None
         st.session_state.coshh_chat = []
         st.rerun()

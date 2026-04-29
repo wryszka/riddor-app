@@ -4,23 +4,37 @@ import io
 from fpdf import FPDF
 
 
+_REPLACEMENTS = {
+    # Dashes / hyphens
+    "‐": "-", "‑": "-", "‒": "-", "–": "-", "—": "-",
+    "―": "-", "−": "-",
+    # Bullets
+    "•": "-", "‣": "-", "◦": "-", "·": "-",
+    # Quotes
+    "‘": "'", "’": "'", "‚": ",", "‛": "'",
+    "“": '"', "”": '"', "„": '"', "‟": '"',
+    # Math/comparison
+    "≤": "<=", "≥": ">=", "≠": "!=", "≈": "~",
+    "×": "x", "÷": "/",
+    # Misc symbols
+    "°": " deg", "μ": "u", "µ": "u",
+    "→": "->", "←": "<-", "↑": "^", "↓": "v",
+    "…": "...",
+    " ": " ",  # non-breaking space
+    "®": "(R)", "©": "(c)", "™": "(TM)",
+}
+
+
 def _safe(text) -> str:
-    """fpdf2 default font is Latin-1; replace common unicode chars."""
+    """fpdf2 default font is Latin-1; replace common unicode chars and drop the rest."""
     if text is None:
         return ""
     if not isinstance(text, str):
         text = str(text)
-    return (
-        text.replace("—", "-")
-            .replace("–", "-")
-            .replace("•", "-")
-            .replace("'", "'")
-            .replace("'", "'")
-            .replace(""", '"')
-            .replace(""", '"')
-            .replace("≤", "<=")
-            .replace("≥", ">=")
-    )
+    for old, new in _REPLACEMENTS.items():
+        text = text.replace(old, new)
+    # Anything still outside latin-1 becomes '?'
+    return text.encode("latin-1", errors="replace").decode("latin-1")
 
 
 def _risk_color(rating: str) -> tuple[int, int, int]:
