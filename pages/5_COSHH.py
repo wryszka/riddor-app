@@ -218,18 +218,41 @@ if doc:
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-    # ── Template fill: upload your docx template & download filled version ──
+    # ── Template fill: pick built-in or upload your own ──────────────────
     template_loaded = st.session_state.coshh_template_bytes is not None
     expander_label = (
-        f"📥 Fill your COSHH docx template — ✅ {st.session_state.coshh_template_name}"
+        f"📥 Fill COSHH docx template — ✅ {st.session_state.coshh_template_name}"
         if template_loaded else
-        "📥 Fill your COSHH docx template"
+        "📥 Fill COSHH docx template"
     )
     with st.expander(expander_label, expanded=not template_loaded):
-        st.caption("Upload your company's COSHH template (.docx) with `{{placeholders}}` and download the filled version. Once uploaded, the template stays loaded for subsequent SDS files.")
+        # Pick a template
+        choice_col, action_col = st.columns([2, 1])
+        with choice_col:
+            template_choice = st.radio(
+                "Template",
+                ["Built-in template", "Upload your own"],
+                horizontal=True,
+                label_visibility="collapsed",
+                key="coshh_template_choice",
+            )
+        with action_col:
+            with st.popover("📋 Placeholders", use_container_width=True):
+                from coshh_docx import PLACEHOLDERS
+                st.caption("Placeholders the template can use:")
+                for ph, desc in PLACEHOLDERS:
+                    st.code(f"{{{{{ph}}}}}", language=None)
+                    st.caption(desc)
+                    st.write("")
 
-        tcol1, tcol2 = st.columns(2)
-        with tcol1:
+        if template_choice == "Built-in template":
+            if st.session_state.coshh_template_name != "_builtin_":
+                if st.button("Use built-in COSHH template", use_container_width=True):
+                    from coshh_default_template import build_default_template
+                    st.session_state.coshh_template_bytes = build_default_template()
+                    st.session_state.coshh_template_name = "_builtin_"
+                    st.rerun()
+        else:
             template_file = st.file_uploader(
                 "Upload .docx template",
                 type=["docx"],
@@ -237,20 +260,10 @@ if doc:
                 key="coshh_template_uploader",
                 label_visibility="collapsed",
             )
-            # Capture bytes ONCE per upload — buffer can't be re-read on rerun
             if template_file is not None and template_file.name != st.session_state.coshh_template_name:
                 st.session_state.coshh_template_bytes = template_file.read()
                 st.session_state.coshh_template_name = template_file.name
                 st.rerun()
-
-        with tcol2:
-            with st.popover("📋 Placeholders to add", use_container_width=True):
-                from coshh_docx import PLACEHOLDERS
-                st.caption("Add these in your template (curly braces matter):")
-                for ph, desc in PLACEHOLDERS:
-                    st.code(f"{{{{{ph}}}}}", language=None)
-                    st.caption(desc)
-                    st.write("")
 
         if template_loaded:
             try:
@@ -260,8 +273,9 @@ if doc:
                 safe_name = "".join(c if c.isalnum() else "_" for c in product_name)[:50]
                 dcol1, dcol2 = st.columns([3, 1])
                 with dcol1:
+                    label = "⬇️ Download Filled COSHH Assessment"
                     st.download_button(
-                        "⬇️ Download Filled Template",
+                        label,
                         data=filled_bytes,
                         file_name=f"COSHH_{safe_name}.docx",
                         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -269,13 +283,13 @@ if doc:
                         type="primary",
                     )
                 with dcol2:
-                    if st.button("Remove template", use_container_width=True):
+                    if st.button("Clear template", use_container_width=True):
                         st.session_state.coshh_template_bytes = None
                         st.session_state.coshh_template_name = None
                         st.rerun()
             except Exception as e:
                 st.error(f"Failed to fill template: {e}")
-                st.caption("Make sure your template uses Jinja-style `{{placeholder}}` syntax (see the placeholder list).")
+                st.caption("If using a custom template, make sure it uses Jinja-style `{{placeholder}}` syntax (see the placeholder list).")
 
     if st.button("📄 New document"):
         st.session_state.sds_doc = None

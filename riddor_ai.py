@@ -77,23 +77,50 @@ def _chat(system: str, user: str, temperature: float = 0.1, max_tokens: int = 20
 
 
 def _extract_json(text: str) -> str:
-    """Extract a JSON object from text that may contain reasoning preamble."""
-    import re
-    # Strip markdown code fences
+    """Extract a JSON object from text that may contain reasoning preamble.
+
+    Handles arbitrary nesting and ignores braces inside string literals.
+    """
     t = text.strip()
+    # Strip markdown code fences if present
     if t.startswith("```"):
-        t = t.split("\n", 1)[1] if "\n" in t else t[3:]
+        first_nl = t.find("\n")
+        if first_nl > 0:
+            t = t[first_nl + 1:]
+        else:
+            t = t[3:]
         if t.endswith("```"):
             t = t[:-3]
         t = t.strip()
-    # If it's already valid JSON, return it
-    if t.startswith("{"):
+
+    # Walk the string, tracking depth and string state, to find the first
+    # complete top-level {...} block
+    start = t.find("{")
+    if start < 0:
         return t
-    # Find the first { ... } block (the JSON object) in the text
-    match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', t, re.DOTALL)
-    if match:
-        return match.group(0)
-    return t
+    depth = 0
+    in_string = False
+    escape = False
+    for i in range(start, len(t)):
+        ch = t[i]
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return t[start:i + 1]
+    # Fall through — return whatever we have
+    return t[start:]
 
 
 # ── System Prompts ────────────────────────────────────────────────────
