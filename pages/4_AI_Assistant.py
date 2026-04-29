@@ -1,81 +1,97 @@
-"""AI Chat Assistant — RIDDOR expert conversational interface."""
+"""AI Assistant — RIDDOR expert with full visibility of the app's data."""
 
 import streamlit as st
 
 st.markdown("## 💬 AI Assistant")
-st.caption("Ask questions about RIDDOR regulations, incident classification, and reporting requirements")
+st.caption("Ask about RIDDOR regulations or your own incidents and chemicals on file")
 
-# ── Example questions ─────────────────────────────────────────────────
-EXAMPLES = [
-    "An employee slipped and broke their wrist yesterday — is this RIDDOR reportable?",
-    "A visitor fainted in reception and went to hospital as a precaution — do I need to report?",
-    "What counts as a dangerous occurrence?",
-    "How do I calculate the 7-day absence period?",
-    "What's the difference between a specified injury and an over-7-day injury?",
-    "A contractor cut their finger and needed stitches — is this reportable?",
-]
-
-# Initialise chat
+# ── Init state ────────────────────────────────────────────────────────
 if "chat_messages" not in st.session_state:
     st.session_state.chat_messages = []
 
-# ── Example question buttons (when no chat history) ───────────────────
+# ── Gather context the assistant has access to ───────────────────────
+incidents = list(st.session_state.get("incidents", {}).values())
+sds_doc = st.session_state.get("sds_doc")
+sds_documents = {sds_doc["name"]: {"structured": sds_doc["structured"]}} if sds_doc else {}
+
+# ── Empty state with examples ────────────────────────────────────────
 if not st.session_state.chat_messages:
     st.markdown("""
 <div style="text-align: center; padding: 30px 20px 10px;">
     <div style="font-size: 48px; margin-bottom: 12px;">🛡️</div>
-    <h3>RIDDOR Expert Assistant</h3>
+    <h3>RIDDOR Expert + Data Assistant</h3>
     <p style="color: #6b7280;">
-        Ask me about incident classification, reporting deadlines, or any workplace health &amp; safety question.
+        Ask about RIDDOR regulations, classification questions, or your own incidents and chemicals on file.
     </p>
 </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("#### Try asking...")
-    cols = st.columns(2)
-    for i, q in enumerate(EXAMPLES):
-        with cols[i % 2]:
-            if st.button(f'"{q}"', key=f"ex_{i}", use_container_width=True):
-                st.session_state.chat_messages.append({"role": "user", "content": q})
-                with st.spinner("Thinking..."):
-                    try:
-                        from riddor_ai import chat_response
-                        resp = chat_response(st.session_state.chat_messages)
-                        st.session_state.chat_messages.append({"role": "assistant", "content": resp})
-                    except Exception as e:
-                        st.session_state.chat_messages.append({
-                            "role": "assistant",
-                            "content": f"Sorry, I encountered an error: {e}",
-                        })
+    REGULATION_EXAMPLES = [
+        "Is a broken finger RIDDOR reportable?",
+        "What counts as a dangerous occurrence?",
+        "How do I calculate the 7-day absence period?",
+    ]
+    DATA_EXAMPLES = [
+        "Which cases are overdue and by how much?",
+        "How many incidents has each department had?",
+        "Tell me about the kitchen burns case",
+    ]
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("**About RIDDOR rules**")
+        for i, q in enumerate(REGULATION_EXAMPLES):
+            if st.button(q, key=f"reg_ex_{i}", use_container_width=True):
+                st.session_state._pending_q = q
+                st.rerun()
+    with c2:
+        st.markdown("**About your data**")
+        for i, q in enumerate(DATA_EXAMPLES):
+            if st.button(q, key=f"data_ex_{i}", use_container_width=True):
+                st.session_state._pending_q = q
                 st.rerun()
 
-# ── Chat messages (full width) ────────────────────────────────────────
+
+def _send(prompt: str):
+    """Send a message to the data-aware assistant."""
+    st.session_state.chat_messages.append({"role": "user", "content": prompt})
+    try:
+        from riddor_ai import data_chat
+        ans = data_chat(
+            st.session_state.chat_messages,
+            incidents,
+            st.session_state.get("actions", []),
+            sds_documents,
+        )
+        st.session_state.chat_messages.append({"role": "assistant", "content": ans})
+    except Exception as e:
+        st.session_state.chat_messages.append({"role": "assistant", "content": f"Sorry, I encountered an error: {e}"})
+
+
+# Process pending example button click
+if "_pending_q" in st.session_state:
+    q = st.session_state.pop("_pending_q")
+    with st.spinner("Thinking..."):
+        _send(q)
+    st.rerun()
+
+# ── Chat history ─────────────────────────────────────────────────────
 for msg in st.session_state.chat_messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# ── Chat input (full width) ──────────────────────────────────────────
-if prompt := st.chat_input("Ask about RIDDOR regulations..."):
-    st.session_state.chat_messages.append({"role": "user", "content": prompt})
+# ── Input ────────────────────────────────────────────────────────────
+if prompt := st.chat_input("Ask about RIDDOR or your data..."):
     with st.chat_message("user"):
         st.markdown(prompt)
-
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            try:
-                from riddor_ai import chat_response
-                resp = chat_response(st.session_state.chat_messages)
-                st.markdown(resp)
-                st.session_state.chat_messages.append({"role": "assistant", "content": resp})
-            except Exception as e:
-                error_msg = f"Sorry, I encountered an error connecting to the AI model: {e}"
-                st.markdown(error_msg)
-                st.session_state.chat_messages.append({"role": "assistant", "content": error_msg})
+            _send(prompt)
+            st.markdown(st.session_state.chat_messages[-1]["content"])
 
-# ── Footer ────────────────────────────────────────────────────────────
 if st.session_state.chat_messages:
     if st.button("🗑️ Clear Chat"):
         st.session_state.chat_messages = []
         st.rerun()
 
-st.caption("⚠️ AI-assisted guidance — always verify critical decisions with HSE directly")
+st.caption("⚠️ AI-assisted — always verify critical decisions with HSE directly")

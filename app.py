@@ -17,6 +17,32 @@ st.markdown("""
         border-right: 1px solid rgba(128,128,128,0.2);
     }
 
+    /* Navigation section headers (RIDDOR, COSHH) — bigger, bolder, with gap */
+    section[data-testid="stSidebar"] [data-testid="stSidebarNavSeparator"],
+    section[data-testid="stSidebar"] ul[data-testid="stSidebarNavItems"] > li:has(> span) {
+        margin-top: 1.5rem;
+    }
+    section[data-testid="stSidebar"] [data-testid="stSidebarNav"] span,
+    section[data-testid="stSidebar"] ul[data-testid="stSidebarNavItems"] > li > span {
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        text-transform: none !important;
+        letter-spacing: 0 !important;
+        opacity: 1 !important;
+        color: var(--text-color) !important;
+        padding-top: 1rem !important;
+        padding-bottom: 0.4rem !important;
+        display: block;
+        border-top: 1px solid rgba(128,128,128,0.18);
+        margin-top: 0.6rem !important;
+    }
+    /* Don't add the top border to the very first section */
+    section[data-testid="stSidebar"] ul[data-testid="stSidebarNavItems"] > li:first-child > span {
+        border-top: none !important;
+        margin-top: 0 !important;
+        padding-top: 0.4rem !important;
+    }
+
     /* Metric cards */
     [data-testid="stMetric"] {
         border: 1px solid rgba(128,128,128,0.2);
@@ -92,8 +118,6 @@ with st.sidebar:
             st.session_state.pop(k, None)
         # Reset COSHH state
         st.session_state.sds_doc = None
-        # Reset Data Assistant chat
-        st.session_state.data_chat_messages = []
         st.toast("Demo reset to original state", icon="✅")
         st.rerun()
     st.caption("⚠️ AI-assisted — always verify critical decisions with HSE directly")
@@ -105,7 +129,6 @@ pg = st.navigation({
         st.Page("pages/2_Report_Incident.py", title="Report Incident", icon="📝"),
         st.Page("pages/3_Archive.py", title="Past Reports", icon="📁"),
         st.Page("pages/4_AI_Assistant.py", title="AI Assistant", icon="💬"),
-        st.Page("pages/6_Data_Assistant.py", title="Data Assistant", icon="📚"),
     ],
     "🧪 COSHH": [
         st.Page("pages/5_COSHH.py", title="COSHH Assistant", icon="🧪"),
