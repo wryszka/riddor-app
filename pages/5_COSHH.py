@@ -214,6 +214,47 @@ if doc:
 
             st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── Template fill: upload your docx template & download filled version ──
+    with st.expander("📥 Fill your COSHH docx template", expanded=False):
+        st.caption("Upload your company's COSHH template (.docx) with `{{placeholders}}` and download the filled version.")
+
+        tcol1, tcol2 = st.columns(2)
+        with tcol1:
+            template_file = st.file_uploader(
+                "Upload .docx template",
+                type=["docx"],
+                accept_multiple_files=False,
+                key="coshh_template_uploader",
+                label_visibility="collapsed",
+            )
+        with tcol2:
+            with st.popover("📋 Placeholders to add", use_container_width=True):
+                from coshh_docx import PLACEHOLDERS
+                st.caption("Add these in your template (curly braces matter):")
+                for ph, desc in PLACEHOLDERS:
+                    st.code(f"{{{{{ph}}}}}", language=None)
+                    st.caption(desc)
+                    st.write("")
+
+        if template_file is not None:
+            try:
+                from coshh_docx import fill_template
+                template_bytes = template_file.read()
+                filled_bytes = fill_template(template_bytes, structured)
+                product_name = product.get("name") or doc["name"].rsplit(".", 1)[0]
+                safe_name = "".join(c if c.isalnum() else "_" for c in product_name)[:50]
+                st.download_button(
+                    "⬇️ Download Filled Template",
+                    data=filled_bytes,
+                    file_name=f"COSHH_{safe_name}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                )
+                st.success("Template ready — click above to download.")
+            except Exception as e:
+                st.error(f"Failed to fill template: {e}")
+                st.caption("Make sure your template uses Jinja-style `{{placeholder}}` syntax (see the placeholder list).")
+
     if st.button("📄 New document"):
         st.session_state.sds_doc = None
         st.session_state.coshh_chat = []
