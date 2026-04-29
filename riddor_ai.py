@@ -2,6 +2,7 @@
 
 import json
 import os
+from datetime import datetime
 from databricks.sdk import WorkspaceClient
 from openai import OpenAI
 
@@ -356,5 +357,91 @@ def sds_chat(messages: list[dict], document_text: str, structured: dict) -> str:
         messages=full_messages,
         temperature=0.2,
         max_tokens=1500,
+    )
+    return _extract_text(resp.choices[0].message.content)
+
+
+# ── Data Assistant — answers questions about app's actual data ───────
+
+DATA_ASSISTANT_PROMPT = """You are a Health & Safety Data Assistant for an organisation using a RIDDOR decision support system. You have access to the organisation's actual incident data and COSHH safety data sheets, provided in the context below.
+
+Your role:
+- Answer questions about the organisation's specific incidents (open, submitted, closed), their classifications, deadlines, and status
+- Answer questions about the COSHH chemicals on file (hazards, PPE, storage, exposure limits)
+- Provide aggregate statistics, counts, and trends when asked
+- Identify overdue cases, urgent items, and patterns
+- Cross-reference incidents and chemicals where relevant
+
+Rules:
+- Answer ONLY based on the data provided. If something isn't in the context, say so explicitly — never invent incidents, references, or chemical details.
+- When asked about specific cases, cite the reference number (e.g. RIDDOR-20260418-A1B2).
+- For "how many" questions, give the exact count and list the items.
+- Use plain English, not jargon.
+- Format answers naturally — short answers for simple questions, structured for complex ones.
+- If asked about general RIDDOR rules (not specific to the data), answer briefly and suggest the AI Assistant page for deeper regulatory guidance."""
+
+
+def data_chat(messages: list[dict], incidents: list[dict], actions: list[dict], sds_documents: dict) -> str:
+    """Answer a question grounded in the app's actual data (incidents + SDSs)."""
+    client = _get_client()
+
+    # Build compact incident summary (strip verbose fields to save tokens)
+    incident_summary = []
+    for inc in incidents:
+        incident_summary.append({
+            "ref": inc.get("reference"),
+            "date": inc.get("incident_date"),
+            "type": inc.get("incident_type"),
+            "person": inc.get("person_name"),
+            "person_type": inc.get("person_type"),
+            "department": inc.get("department"),
+            "location": inc.get("location"),
+            "description": inc.get("description"),
+            "status": inc.get("status"),
+            "deadline": inc.get("reporting_deadline"),
+            "submitted_at": inc.get("submitted_at"),
+            "hse_reference": inc.get("hse_reference"),
+            "absence_days": inc.get("absence_days"),
+            "is_reportable": (inc.get("ai_classification") or {}).get("is_reportable"),
+        })
+
+    # Build SDS summary (just the structured extraction, not full text)
+    sds_summary = {}
+    for fname, doc in (sds_documents or {}).items():
+        sds_summary[fname] = doc.get("structured", {})
+
+    # Action timeline (last 30)
+    action_summary = [
+        {
+            "incident": a.get("incident_id"),
+            "type": a.get("action_type"),
+            "description": a.get("description"),
+            "by": a.get("performed_by"),
+            "when": a.get("timestamp", "")[:10],
+        }
+        for a in (actions or [])[-30:]
+    ]
+
+    today = datetime.now().date().isoformat()
+
+    context_parts = [f"## Today's date: {today}"]
+    context_parts.append(f"\n## Incidents ({len(incident_summary)} total)\n```json\n{json.dumps(incident_summary, indent=2)}\n```")
+    if action_summary:
+        context_parts.append(f"\n## Recent activity\n```json\n{json.dumps(action_summary, indent=2)}\n```")
+    if sds_summary:
+        context_parts.append(f"\n## COSHH Safety Data Sheets on file ({len(sds_summary)} documents)\n```json\n{json.dumps(sds_summary, indent=2)}\n```")
+    else:
+        context_parts.append("\n## COSHH Safety Data Sheets on file\nNone uploaded yet.")
+
+    full_context = "\n".join(context_parts)
+
+    full_messages = [
+        {"role": "system", "content": DATA_ASSISTANT_PROMPT + "\n\n" + full_context},
+    ] + messages[-10:]
+    resp = client.chat.completions.create(
+        model=_get_model(),
+        messages=full_messages,
+        temperature=0.2,
+        max_tokens=2000,
     )
     return _extract_text(resp.choices[0].message.content)
