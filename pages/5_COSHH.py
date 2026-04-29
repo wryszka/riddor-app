@@ -11,6 +11,10 @@ if "sds_doc" not in st.session_state:
     st.session_state.sds_doc = None
 if "coshh_chat" not in st.session_state:
     st.session_state.coshh_chat = []
+if "coshh_template_bytes" not in st.session_state:
+    st.session_state.coshh_template_bytes = None
+if "coshh_template_name" not in st.session_state:
+    st.session_state.coshh_template_name = None
 
 
 # ── Text extraction helpers ──────────────────────────────────────────
@@ -215,8 +219,14 @@ if doc:
             st.markdown("</div>", unsafe_allow_html=True)
 
     # ── Template fill: upload your docx template & download filled version ──
-    with st.expander("📥 Fill your COSHH docx template", expanded=False):
-        st.caption("Upload your company's COSHH template (.docx) with `{{placeholders}}` and download the filled version.")
+    template_loaded = st.session_state.coshh_template_bytes is not None
+    expander_label = (
+        f"📥 Fill your COSHH docx template — ✅ {st.session_state.coshh_template_name}"
+        if template_loaded else
+        "📥 Fill your COSHH docx template"
+    )
+    with st.expander(expander_label, expanded=not template_loaded):
+        st.caption("Upload your company's COSHH template (.docx) with `{{placeholders}}` and download the filled version. Once uploaded, the template stays loaded for subsequent SDS files.")
 
         tcol1, tcol2 = st.columns(2)
         with tcol1:
@@ -227,6 +237,12 @@ if doc:
                 key="coshh_template_uploader",
                 label_visibility="collapsed",
             )
+            # Capture bytes ONCE per upload — buffer can't be re-read on rerun
+            if template_file is not None and template_file.name != st.session_state.coshh_template_name:
+                st.session_state.coshh_template_bytes = template_file.read()
+                st.session_state.coshh_template_name = template_file.name
+                st.rerun()
+
         with tcol2:
             with st.popover("📋 Placeholders to add", use_container_width=True):
                 from coshh_docx import PLACEHOLDERS
@@ -236,21 +252,27 @@ if doc:
                     st.caption(desc)
                     st.write("")
 
-        if template_file is not None:
+        if template_loaded:
             try:
                 from coshh_docx import fill_template
-                template_bytes = template_file.read()
-                filled_bytes = fill_template(template_bytes, structured)
+                filled_bytes = fill_template(st.session_state.coshh_template_bytes, structured)
                 product_name = product.get("name") or doc["name"].rsplit(".", 1)[0]
                 safe_name = "".join(c if c.isalnum() else "_" for c in product_name)[:50]
-                st.download_button(
-                    "⬇️ Download Filled Template",
-                    data=filled_bytes,
-                    file_name=f"COSHH_{safe_name}.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    use_container_width=True,
-                )
-                st.success("Template ready — click above to download.")
+                dcol1, dcol2 = st.columns([3, 1])
+                with dcol1:
+                    st.download_button(
+                        "⬇️ Download Filled Template",
+                        data=filled_bytes,
+                        file_name=f"COSHH_{safe_name}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True,
+                        type="primary",
+                    )
+                with dcol2:
+                    if st.button("Remove template", use_container_width=True):
+                        st.session_state.coshh_template_bytes = None
+                        st.session_state.coshh_template_name = None
+                        st.rerun()
             except Exception as e:
                 st.error(f"Failed to fill template: {e}")
                 st.caption("Make sure your template uses Jinja-style `{{placeholder}}` syntax (see the placeholder list).")
