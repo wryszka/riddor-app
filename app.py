@@ -90,10 +90,6 @@ if "incidents" not in st.session_state:
 
 # ── Sidebar ───────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### 🛡️ RIDDOR")
-    st.markdown("##### Decision Support")
-    st.markdown("---")
-
     st.markdown("""
 **Quick Reference**
 
