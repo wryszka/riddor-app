@@ -726,10 +726,13 @@ def coshh_page():
 def _render_coshh(rerender):
     global sds_doc
 
-    # Upload section
+    # ── 1. Template management at the top (always visible) ──────────
+    _render_template_picker(rerender)
+
+    # ── 2. SDS upload ────────────────────────────────────────────────
     with ui.card().classes("w-full p-4"):
         ui.label("📄 Upload a Safety Data Sheet").classes("text-lg font-semibold mb-1")
-        ui.label("PDF, DOCX or TXT").classes("text-xs text-slate-500")
+        ui.label("PDF, DOCX or TXT").classes("text-xs text-slate-500 mb-2")
 
         async def handle_upload(e: events.UploadEventArguments):
             global sds_doc
@@ -766,11 +769,89 @@ def _render_coshh(rerender):
             ui.label(structured.get("_raw_response", "")).classes("text-xs text-slate-600 whitespace-pre-wrap")
         return
 
+    # ── 3. Assessment + fill button + chat ──────────────────────────
     _render_assessment(structured)
-    _render_template_section(structured, sds_doc["name"])
+    _render_fill_action(structured, sds_doc["name"])
     _render_coshh_chat(rerender)
 
     ui.button("📄 New document", on_click=lambda: _coshh_reset(rerender)).props("flat").classes("mt-2")
+
+
+def _render_template_picker(rerender):
+    """Always-visible template picker — select existing or upload new."""
+    from template_store import list_templates, save_template, delete_template, BUILTIN_KEY
+
+    global selected_template_key
+
+    with ui.card().classes("w-full p-4"):
+        ui.label("📥 COSHH Template").classes("text-lg font-semibold mb-1")
+        ui.label("Pick a stored template or upload a new one. Uploaded templates stay available in the dropdown.").classes("text-xs text-slate-500 mb-3")
+
+        templates_list = list_templates()
+        options = {key: name for key, name in templates_list}
+
+        if selected_template_key not in options:
+            selected_template_key = BUILTIN_KEY
+
+        with ui.row().classes("w-full gap-2 items-center"):
+            sel = ui.select(options, value=selected_template_key, label="Select template").props("outlined dense").classes("flex-1")
+
+            def on_select(e):
+                global selected_template_key
+                selected_template_key = sel.value
+
+            sel.on("update:model-value", on_select)
+
+            def remove_selected():
+                if sel.value == BUILTIN_KEY:
+                    ui.notify("Built-in template can't be removed", type="warning")
+                    return
+                delete_template(sel.value)
+                ui.notify("Template removed", type="positive")
+                rerender()
+
+            ui.button("🗑️", on_click=remove_selected).props("flat dense").tooltip("Remove selected template")
+            ui.button("📋 Placeholders", on_click=_show_placeholders_dialog).props("flat dense")
+
+        with ui.row().classes("w-full mt-3 items-center gap-2"):
+            ui.label("Upload new template (.docx):").classes("text-sm text-slate-600 whitespace-nowrap")
+
+            async def on_template_upload(e: events.UploadEventArguments):
+                if not e.name.lower().endswith(".docx"):
+                    ui.notify("Templates must be .docx", type="warning")
+                    return
+                data = e.content.read()
+                key = save_template(e.name, data)
+                global selected_template_key
+                selected_template_key = key
+                ui.notify(f"Template saved: {key}", type="positive")
+                rerender()
+
+            ui.upload(on_upload=on_template_upload, auto_upload=True, max_file_size=10_000_000).props("accept=.docx").classes("flex-1")
+
+
+def _render_fill_action(structured: dict, source_name: str):
+    """After SDS extraction, button to fill the currently selected template."""
+    from template_store import get_template_bytes
+    from coshh_docx import fill_template
+
+    with ui.card().classes("w-full p-4"):
+        ui.label("⬇️ Generate Filled Assessment").classes("text-lg font-semibold mb-1")
+        ui.label(f"Fills the selected template with the data extracted from {source_name}.").classes("text-xs text-slate-500 mb-3")
+
+        async def fill_and_download():
+            try:
+                template_bytes = get_template_bytes(selected_template_key)
+                filled = fill_template(template_bytes, structured)
+                product_name = (structured.get("product") or {}).get("name") or source_name.rsplit(".", 1)[0]
+                safe = "".join(c if c.isalnum() else "_" for c in product_name)[:50]
+                fname = f"COSHH_{safe}.docx"
+                ui.download(filled, fname)
+                ui.notify("Filled template downloaded", type="positive")
+            except Exception as ex:
+                ui.notify(f"Fill failed: {ex}", type="negative", timeout=8000)
+
+        ui.button("Generate & Download", on_click=fill_and_download).props("color=primary size=lg").classes("w-full")
 
 
 def _coshh_reset(rerender):
@@ -873,73 +954,6 @@ def _render_assessment(structured: dict):
         with ui.row().classes("items-center mt-4 gap-2"):
             ui.label("Risk Rating (after control measures):").classes("font-bold")
             ui.html(f'<span style="background:{rating_color};color:#fff;padding:4px 14px;border-radius:6px;font-weight:700">{rating}</span>')
-
-
-def _render_template_section(structured: dict, source_name: str):
-    """Template selector + uploader + fill download."""
-    from template_store import list_templates, save_template, get_template_bytes, delete_template, BUILTIN_KEY
-
-    with ui.card().classes("w-full p-4"):
-        ui.label("📥 Fill COSHH Template").classes("text-lg font-semibold mb-2")
-        ui.label("Pick a stored template, or upload a new one — uploaded templates are saved in the list.").classes("text-xs text-slate-500 mb-3")
-
-        templates_list = list_templates()
-        options = {key: name for key, name in templates_list}
-
-        global selected_template_key
-        if selected_template_key not in options:
-            selected_template_key = BUILTIN_KEY
-
-        with ui.row().classes("w-full gap-2 items-center"):
-            sel = ui.select(options, value=selected_template_key, label="Template").props("outlined dense").classes("flex-1")
-            def on_select(e):
-                global selected_template_key
-                selected_template_key = sel.value
-            sel.on("update:model-value", on_select)
-
-            def remove_selected():
-                if selected_template_key == BUILTIN_KEY:
-                    ui.notify("Built-in template can't be removed", type="warning")
-                    return
-                delete_template(selected_template_key)
-                ui.notify("Template removed", type="positive")
-                ui.navigate.reload()
-
-            ui.button("🗑️", on_click=remove_selected).props("flat dense").tooltip("Remove selected template")
-
-        # Upload new template
-        with ui.row().classes("w-full mt-2 items-center gap-2"):
-            ui.label("Upload new template:").classes("text-sm text-slate-600")
-
-            async def on_template_upload(e: events.UploadEventArguments):
-                if not e.name.lower().endswith(".docx"):
-                    ui.notify("Templates must be .docx", type="warning")
-                    return
-                key = save_template(e.name, e.content.read())
-                ui.notify(f"Template saved: {key}", type="positive")
-                global selected_template_key
-                selected_template_key = key
-                ui.navigate.reload()
-
-            ui.upload(on_upload=on_template_upload, auto_upload=True, max_file_size=10_000_000).props("accept=.docx flat dense").classes("flex-1")
-
-        with ui.row().classes("w-full mt-3 gap-2"):
-            ui.button("📋 Show placeholders", on_click=_show_placeholders_dialog).props("flat")
-
-            async def fill_and_download():
-                from coshh_docx import fill_template
-                try:
-                    template_bytes = get_template_bytes(selected_template_key)
-                    filled = fill_template(template_bytes, structured)
-                    product_name = (structured.get("product") or {}).get("name") or source_name.rsplit(".", 1)[0]
-                    safe = "".join(c if c.isalnum() else "_" for c in product_name)[:50]
-                    fname = f"COSHH_{safe}.docx"
-                    ui.download(filled, fname)
-                    ui.notify("Filled template downloaded", type="positive")
-                except Exception as ex:
-                    ui.notify(f"Fill failed: {ex}", type="negative", timeout=8000)
-
-            ui.button("⬇️ Generate & Download", on_click=fill_and_download).props("color=primary")
 
 
 def _show_placeholders_dialog():
