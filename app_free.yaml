@@ -1,11 +1,6 @@
 command:
-  - "streamlit"
-  - "run"
-  - "app.py"
-  - "--server.port"
-  - "8000"
-  - "--server.address"
-  - "0.0.0.0"
+  - "python"
+  - "main.py"
 env:
   - name: AI_ENDPOINT_NAME
     value: "databricks-gpt-oss-120b"

@@ -1,11 +1,3 @@
 command:
-  - "streamlit"
-  - "run"
-  - "app.py"
-  - "--server.port"
-  - "8000"
-  - "--server.address"
-  - "0.0.0.0"
-env:
-  - name: AI_ENDPOINT_NAME
-    value: "databricks-claude-sonnet-4-6"
+  - "python"
+  - "main.py"
