@@ -6,3 +6,7 @@ __pycache__/
 .DS_Store
 node_modules/
 dist/
+
+# Company SSRA template — derived from a customer's branded form.
+# Kept local-only and deployed to the app, NOT committed to the public repo.
+templates/

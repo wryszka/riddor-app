@@ -30,6 +30,7 @@ ai_chat_messages: list = []
 
 # Risk Assessment state
 ra_result: dict | None = None   # output of generate_risk_assessment
+selected_ssra_template_key: str = "_builtin_"
 
 
 def reset_demo():
@@ -40,6 +41,8 @@ def reset_demo():
     coshh_chat_messages = []
     ai_chat_messages = []
     ra_result = None
+    global selected_ssra_template_key
+    selected_ssra_template_key = "_builtin_"
 
 
 # ── Theme & shared CSS ───────────────────────────────────────────────
@@ -205,7 +208,7 @@ def landing_page():
                             "Paste a method statement",
                             "AI identifies foreseeable hazards",
                             "Pre/post-control risk scoring",
-                            "Download as PDF or Word",
+                            "Fill your company SSRA, or export PDF/Word",
                         ]:
                             with ui.row().classes("items-center gap-2 text-sm text-slate-700"):
                                 ui.icon("check_circle", size="sm").classes("text-green-600")
@@ -1164,10 +1167,21 @@ def _render_ra_result(ra: dict, rerender):
                     except Exception as ex:
                         ui.notify(f"Word failed: {ex}", type="negative", timeout=8000)
 
-                ui.button("📄 PDF", on_click=download_pdf).props("color=primary")
+                def download_ssra():
+                    try:
+                        from ssra_template_store import get_template_bytes
+                        from company_template import fill_ssra
+                        tmpl = get_template_bytes(selected_ssra_template_key)
+                        ui.download(fill_ssra(tmpl, ra), f"SSRA_{safe_name()}.docx")
+                    except Exception as ex:
+                        ui.notify(f"Company SSRA fill failed: {ex}", type="negative", timeout=8000)
+
+                ui.button("🏢 Company SSRA", on_click=download_ssra).props("color=primary").tooltip("Fill your company SSRA template with these hazards")
+                ui.button("📄 PDF", on_click=download_pdf).props("outline color=primary")
                 ui.button("📝 Word", on_click=download_docx).props("outline color=primary")
 
         ui.label(f"{len(rows)} hazard{'s' if len(rows) != 1 else ''} identified").classes("text-sm text-slate-500 mt-1")
+        _render_ssra_template_picker()
 
     # ── Hazard rows ──────────────────────────────────────────────────
     for r in rows:
@@ -1211,6 +1225,44 @@ def _render_hazard_card(r: dict):
                     ui.label("Control measures").classes("text-blue-600 font-bold text-sm")
                     for c in r["control_measures"]:
                         ui.markdown(f"- {c}").classes("ml-2 text-sm")
+
+
+def _render_ssra_template_picker():
+    """Compact picker: choose the built-in company SSRA or upload your own."""
+    from ssra_template_store import list_templates, save_template, BUILTIN_KEY
+
+    global selected_ssra_template_key
+    with ui.expansion("🏢 Company SSRA template", icon="description").classes("w-full"):
+        ui.label("The “Company SSRA” button fills this Word template with the hazards above, "
+                 "keeping your branding, headers and sign-off. Upload your own to match your exact format.").classes("text-xs text-slate-500 mb-2")
+
+        options = {key: name for key, name in list_templates()}
+        if selected_ssra_template_key not in options:
+            selected_ssra_template_key = BUILTIN_KEY
+
+        with ui.row().classes("w-full gap-2 items-center"):
+            sel = ui.select(options, value=selected_ssra_template_key, label="Template").props("outlined dense").classes("flex-1")
+
+            def on_select(_):
+                global selected_ssra_template_key
+                selected_ssra_template_key = sel.value
+            sel.on("update:model-value", on_select)
+
+        async def on_upload(e: events.UploadEventArguments):
+            if not e.name.lower().endswith(".docx"):
+                ui.notify("Templates must be .docx", type="warning")
+                return
+            key = save_template(e.name, e.content.read())
+            global selected_ssra_template_key
+            selected_ssra_template_key = key
+            ui.notify(f"Template saved: {key}. Select it above, then click Company SSRA.", type="positive", timeout=6000)
+
+        with ui.row().classes("w-full mt-2 items-center gap-2"):
+            ui.label("Upload your SSRA template (.docx):").classes("text-sm text-slate-600 whitespace-nowrap")
+            ui.upload(on_upload=on_upload, auto_upload=True, max_file_size=20_000_000).props("accept=.docx").classes("flex-1")
+
+        ui.label("Your template must contain a risk-assessment table with Likelihood, Consequence, "
+                 "Risk Rating, Control Measures and Result columns.").classes("text-xs text-slate-400 mt-1")
 
 
 def _ra_reset(rerender):

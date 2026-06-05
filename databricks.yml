@@ -6,6 +6,10 @@ sync:
     - .venv/
     - __pycache__/
     - test_documents/
+  # templates/ is gitignored (company-derived, kept out of the public repo)
+  # but must still ship to the app, so force-include it here.
+  include:
+    - templates/*.docx
 
 targets:
   dev:
