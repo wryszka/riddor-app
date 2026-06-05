@@ -6,7 +6,7 @@ import json
 import uuid
 from datetime import date, datetime, timedelta
 
-from nicegui import ui, events
+from nicegui import ui, events, run
 
 from riddor_data import (
     INCIDENT_TYPE_CONFIG,
@@ -28,14 +28,18 @@ selected_template_key: str = "_builtin_"
 coshh_chat_messages: list = []
 ai_chat_messages: list = []
 
+# Risk Assessment state
+ra_result: dict | None = None   # output of generate_risk_assessment
+
 
 def reset_demo():
-    global incidents, actions, sds_doc, coshh_chat_messages, ai_chat_messages
+    global incidents, actions, sds_doc, coshh_chat_messages, ai_chat_messages, ra_result
     incidents = {i["id"]: i for i in MOCK_INCIDENTS}
     actions = list(MOCK_ACTIONS)
     sds_doc = None
     coshh_chat_messages = []
     ai_chat_messages = []
+    ra_result = None
 
 
 # ── Theme & shared CSS ───────────────────────────────────────────────
@@ -103,6 +107,7 @@ def app_header(active: str = ""):
                 _nav_link("Home", "/", active == "home")
                 _nav_link("RIDDOR", "/riddor", active == "riddor")
                 _nav_link("COSHH", "/coshh", active == "coshh")
+                _nav_link("Risk Assessment", "/risk-assessment", active == "ra")
                 ui.button("🔄 Reset Demo", on_click=lambda: (reset_demo(), ui.notify("Demo reset", type="positive"), ui.navigate.to("/"))).props("flat dense")
 
 
@@ -152,9 +157,9 @@ def landing_page():
     with page_container():
         with ui.column().classes("items-center text-center w-full py-8 gap-2"):
             ui.label("Health & Safety Hub").classes("text-4xl font-bold")
-            ui.label("AI-powered RIDDOR decision support and COSHH chemical assessments").classes("text-lg text-slate-500")
+            ui.label("AI-powered RIDDOR decision support, COSHH chemical assessments and risk assessments").classes("text-lg text-slate-500")
 
-        with ui.grid(columns=2).classes("w-full gap-6 mt-4"):
+        with ui.grid(columns=3).classes("w-full gap-6 mt-4"):
             # RIDDOR card
             with ui.card().tight().classes("hero-card").on("click", lambda: ui.navigate.to("/riddor")):
                 with ui.column().classes("p-8 gap-3"):
@@ -184,6 +189,23 @@ def landing_page():
                             "Get instant condensed assessments",
                             "Fill your own COSHH template (.docx)",
                             "Ask questions about each substance",
+                        ]:
+                            with ui.row().classes("items-center gap-2 text-sm text-slate-700"):
+                                ui.icon("check_circle", size="sm").classes("text-green-600")
+                                ui.label(item)
+
+            # Risk Assessment card
+            with ui.card().tight().classes("hero-card").on("click", lambda: ui.navigate.to("/risk-assessment")):
+                with ui.column().classes("p-8 gap-3"):
+                    ui.icon("assignment", size="3rem").classes("text-emerald-600")
+                    ui.label("Risk Assessment").classes("text-2xl font-bold")
+                    ui.label("Generate a method-statement risk assessment in your company format").classes("text-slate-600")
+                    with ui.column().classes("gap-1 mt-3"):
+                        for item in [
+                            "Paste a method statement",
+                            "AI identifies foreseeable hazards",
+                            "Pre/post-control risk scoring",
+                            "Download as PDF or Word",
                         ]:
                             with ui.row().classes("items-center gap-2 text-sm text-slate-700"):
                                 ui.icon("check_circle", size="sm").classes("text-green-600")
@@ -1017,6 +1039,184 @@ def _render_coshh_chat(rerender):
                 send(msg)
             inp.on("keydown.enter", lambda e: on_enter())
             ui.button("Send", on_click=on_enter).props("color=primary")
+
+
+# ── Risk Assessment section ──────────────────────────────────────────
+
+_RA_SAMPLE = (
+    "Operative will prepare PoolGuard cleaning solution by diluting concentrate "
+    "into a bucket of water, transport the bucket and mop to the pool surround, "
+    "clean the pool surround using the mop and bucket, and dispose of the waste "
+    "water and packaging at the end of the task."
+)
+
+_RISK_BADGE_STYLE = {
+    "LOW": "background:#16a34a;color:#fff",
+    "MEDIUM": "background:#d97706;color:#fff",
+    "HIGH": "background:#dc2626;color:#fff",
+    "VERY HIGH": "background:#991b1b;color:#fff",
+}
+
+
+@ui.page("/risk-assessment")
+def risk_assessment_page():
+    app_header(active="ra")
+    with page_container():
+        section_header("assignment", "Risk Assessment Generator",
+                       "Paste a method statement — the AI generates a full risk assessment in your company format")
+
+        body = ui.column().classes("w-full gap-4")
+
+        def render():
+            body.clear()
+            with body:
+                _render_ra(render)
+
+        render()
+
+
+def _render_ra(rerender):
+    global ra_result
+
+    # ── Input form ───────────────────────────────────────────────────
+    with ui.card().classes("w-full p-4"):
+        ui.label("📝 Method Statement").classes("text-lg font-semibold mb-1")
+        ui.label("Describe the work. The AI identifies foreseeable hazards even if they are not written down.").classes("text-xs text-slate-500 mb-3")
+
+        with ui.row().classes("w-full gap-3"):
+            scope_in = ui.input(label="Scope of works (optional)").props("outlined dense").classes("flex-1")
+            activity_in = ui.input(label="Activity description (optional)").props("outlined dense").classes("flex-1")
+
+        method_in = ui.textarea(label="Method statement *",
+                                placeholder=_RA_SAMPLE).props("outlined").classes("w-full").style("min-height: 140px")
+
+        with ui.row().classes("w-full items-center gap-2 mt-1"):
+            def use_sample():
+                method_in.value = _RA_SAMPLE
+                scope_in.value = "Cleaning of swimming pool surround"
+                activity_in.value = "Chemical cleaning using mop and bucket"
+            ui.button("Use sample", on_click=use_sample).props("flat dense")
+            ui.space()
+
+            async def generate_now():
+                text = (method_in.value or "").strip()
+                if not text:
+                    ui.notify("Please enter a method statement", type="warning")
+                    return
+                n = ui.notification(message="AI is generating the risk assessment...", spinner=True, timeout=None)
+                try:
+                    from risk_assessment_ai import generate_risk_assessment
+                    result = await run.io_bound(
+                        generate_risk_assessment, text, scope_in.value or "", activity_in.value or ""
+                    )
+                    global ra_result
+                    ra_result = result
+                    n.dismiss()
+                    if result.get("_raw_response"):
+                        ui.notify("The model response could not be parsed — see details below", type="warning", timeout=8000)
+                    else:
+                        ui.notify(f"Generated {len(result.get('hazards', []))} hazard rows", type="positive")
+                    rerender()
+                except Exception as ex:
+                    n.dismiss()
+                    ui.notify(f"Generation failed: {ex}", type="negative", timeout=8000)
+
+            ui.button("⚙️ Generate Risk Assessment", on_click=generate_now).props("color=primary size=lg")
+
+    if ra_result is None:
+        return
+
+    if ra_result.get("_raw_response"):
+        with ui.card().classes("w-full p-4 border-l-4 border-amber-500"):
+            ui.label("Could not parse the model output — raw response:").classes("font-semibold")
+            ui.label(ra_result["_raw_response"]).classes("text-xs text-slate-600 whitespace-pre-wrap")
+        return
+
+    _render_ra_result(ra_result, rerender)
+
+
+def _render_ra_result(ra: dict, rerender):
+    rows = ra.get("hazards") or []
+
+    # ── Header + downloads ───────────────────────────────────────────
+    with ui.card().classes("w-full p-4"):
+        with ui.row().classes("w-full justify-between items-center"):
+            with ui.column().classes("gap-0"):
+                ui.label(ra.get("task_title") or "Risk Assessment").classes("text-xl font-bold")
+                if ra.get("activities"):
+                    ui.label("Activities: " + ", ".join(ra["activities"])).classes("text-sm text-slate-500")
+            with ui.row().classes("gap-2"):
+                def safe_name():
+                    base = ra.get("task_title") or "Risk_Assessment"
+                    return "".join(c if c.isalnum() else "_" for c in base)[:50] or "Risk_Assessment"
+
+                def download_pdf():
+                    try:
+                        from risk_assessment_doc import build_ra_pdf
+                        ui.download(build_ra_pdf(ra), f"Risk_Assessment_{safe_name()}.pdf")
+                    except Exception as ex:
+                        ui.notify(f"PDF failed: {ex}", type="negative", timeout=8000)
+
+                def download_docx():
+                    try:
+                        from risk_assessment_doc import build_ra_docx
+                        ui.download(build_ra_docx(ra), f"Risk_Assessment_{safe_name()}.docx")
+                    except Exception as ex:
+                        ui.notify(f"Word failed: {ex}", type="negative", timeout=8000)
+
+                ui.button("📄 PDF", on_click=download_pdf).props("color=primary")
+                ui.button("📝 Word", on_click=download_docx).props("outline color=primary")
+
+        ui.label(f"{len(rows)} hazard{'s' if len(rows) != 1 else ''} identified").classes("text-sm text-slate-500 mt-1")
+
+    # ── Hazard rows ──────────────────────────────────────────────────
+    for r in rows:
+        _render_hazard_card(r)
+
+    ui.button("➕ New assessment", on_click=lambda: _ra_reset(rerender)).props("flat").classes("mt-2")
+
+
+def _render_hazard_card(r: dict):
+    def rating_badge(label: str, rating, result: str | None = None):
+        style = _RISK_BADGE_STYLE.get((result or "").upper(), "background:#64748b;color:#fff")
+        txt = f"{label}: {rating}" + (f" · {result}" if result else "")
+        ui.html(f'<span style="{style};padding:3px 12px;border-radius:6px;font-weight:700;font-size:13px">{txt}</span>')
+
+    with ui.card().classes("w-full p-4"):
+        with ui.row().classes("w-full justify-between items-start"):
+            with ui.column().classes("gap-1 flex-1"):
+                ui.label(r.get("hazard", "Hazard")).classes("text-lg font-bold")
+                if r.get("activity"):
+                    ui.label(r["activity"]).classes("text-xs text-slate-500")
+            with ui.row().classes("gap-2 items-center"):
+                rating_badge("Pre", r.get("pre_rating"))
+                ui.icon("arrow_forward", size="sm").classes("text-slate-400")
+                rating_badge("Post", r.get("post_rating"), r.get("result"))
+
+        with ui.row().classes("w-full gap-6 mt-2"):
+            with ui.column().classes("gap-1 flex-1"):
+                if r.get("potential_harm"):
+                    ui.label("Potential harm").classes("text-blue-600 font-bold text-sm")
+                    for h in r["potential_harm"]:
+                        ui.markdown(f"- {h}").classes("ml-2 text-sm")
+                if r.get("persons_at_risk"):
+                    ui.label("Persons at risk: " + ", ".join(r["persons_at_risk"])).classes("text-xs text-slate-500 mt-1")
+                ui.label(
+                    f"Pre-control: L{r.get('pre_likelihood')} × C{r.get('pre_consequence')} = {r.get('pre_rating')}   ·   "
+                    f"Post-control: L{r.get('post_likelihood')} × C{r.get('post_consequence')} = {r.get('post_rating')}"
+                ).classes("text-xs text-slate-500 mt-1")
+
+            with ui.column().classes("gap-1 flex-1"):
+                if r.get("control_measures"):
+                    ui.label("Control measures").classes("text-blue-600 font-bold text-sm")
+                    for c in r["control_measures"]:
+                        ui.markdown(f"- {c}").classes("ml-2 text-sm")
+
+
+def _ra_reset(rerender):
+    global ra_result
+    ra_result = None
+    rerender()
 
 
 def _extract_doc_text(name: str, data: bytes) -> str:
